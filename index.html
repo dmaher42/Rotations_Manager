@@ -1,0 +1,563 @@
+import React, { useMemo, useState } from "react";
+
+const PLAYER_ROLES = {
+  "Patty B": "back",
+  "Archer (J)": "mid",
+  "Henry M": "back",
+  "Henry S": "back",
+  Charlie: "back",
+  Lucas: "back",
+  Denzel: "back",
+  Sol: "back",
+  "Blake H": "mid",
+  Toby: "mid",
+  Levi: "back",
+  Mayer: "mid",
+  Mitch: "mid",
+  "Ben M": "mid",
+  Ted: "mid",
+  "Archer (M)": "mid",
+  Brodie: "forward",
+  "Archer (F)": "forward",
+  Chase: "forward",
+  "Blake F": "forward",
+  "Oskar F": "forward",
+  "Lachlan (C)": "forward",
+  "Lachie G": "forward",
+  Mason: "forward",
+  "Ben P": "forward",
+};
+
+const DEFAULT_TEXT = `Rotation plan for this week
+
+Starting 18
+
+Backs: Patty B, Henry M, Henry S, Denzel, Sol, Levi
+Mids: Mayer, Mitch, Ben M, Archer (M), Archer (J), Toby
+Forwards: Brodie, Archer (F), Chase, Blake F, Oskar F, Lachlan (C)
+
+Bench: Charlie, Lucas, Mason, Lachie G, Ben P, Blake H, Ted
+
+Q1
+4 min
+Off: Levi, Toby, Blake F
+On: Charlie, Ted, Mason
+
+8 min
+Off: Denzel, Archer (J), Oskar F
+On: Lucas, Blake H, Lachie G
+
+Q2
+Start on: Ben P
+
+4 min
+Off: Henry S, Archer (M), Brodie
+On: Charlie, Ted, Ben P
+
+8 min
+Off: Sol, Mitch, Chase
+On: Lucas, Blake H, Mason
+
+Q3
+Start on: Henry S, Sol, Brodie, Chase, Archer (M)
+
+5 min
+Off: Levi, Toby, Blake F, Lachlan (C)
+On: Charlie, Ted, Lachie G, Ben P
+
+10 min
+Off: Denzel, Archer (J), Oskar F, Brodie
+On: Lucas, Blake H, Mason, Chase
+
+Q4
+Start strongest group
+
+5 min
+Off: Levi, Toby, Blake F
+On: Charlie, Ted, Mason
+
+10 min
+Off: Archer (J), Oskar F, Lachlan (C)
+On: Blake H, Chase, Archer (M)
+
+Ruck: Ben M, Ted, Archer (M)`;
+
+function splitNames(text: string): string[] {
+  return text
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean);
+}
+
+function cleanLine(line: string): string {
+  return line.replace(/\u00a0/g, " ").trim();
+}
+
+type ParsedData = {
+  starting18: {
+    backs: string[];
+    mids: string[];
+    forwards: string[];
+  };
+  bench: string[];
+  ruck: string[];
+  quarters: Record<"Q1" | "Q2" | "Q3" | "Q4", { startOn: string[]; steps: { label: string; off: string[]; on: string[] }[] }>;
+};
+
+type TimelineStep = {
+  id: string;
+  quarter: string;
+  label: string;
+  on: string[];
+  off: string[];
+  currentOn: string[];
+  currentBench: string[];
+};
+
+function parseRotationText(input: string): ParsedData {
+  const lines = input.split(/\r?\n/).map(cleanLine).filter(Boolean);
+
+  const data: ParsedData = {
+    starting18: { backs: [], mids: [], forwards: [] },
+    bench: [],
+    ruck: [],
+    quarters: {
+      Q1: { startOn: [], steps: [] },
+      Q2: { startOn: [], steps: [] },
+      Q3: { startOn: [], steps: [] },
+      Q4: { startOn: [], steps: [] },
+    },
+  };
+
+  let currentQuarter: keyof ParsedData["quarters"] | null = null;
+  let pendingStep: { label: string; off: string[]; on: string[] } | null = null;
+
+  for (const line of lines) {
+    if (/^Backs:/i.test(line)) {
+      data.starting18.backs = splitNames(line.replace(/^Backs:/i, ""));
+      continue;
+    }
+    if (/^Mids:/i.test(line)) {
+      data.starting18.mids = splitNames(line.replace(/^Mids:/i, ""));
+      continue;
+    }
+    if (/^Forwards:/i.test(line)) {
+      data.starting18.forwards = splitNames(line.replace(/^Forwards:/i, ""));
+      continue;
+    }
+    if (/^Bench:/i.test(line)) {
+      data.bench = splitNames(line.replace(/^Bench:/i, ""));
+      continue;
+    }
+    if (/^Ruck:/i.test(line)) {
+      data.ruck = splitNames(line.replace(/^Ruck:/i, ""));
+      continue;
+    }
+    if (/^Q[1-4]$/i.test(line)) {
+      currentQuarter = line.toUpperCase() as keyof ParsedData["quarters"];
+      pendingStep = null;
+      continue;
+    }
+    if (!currentQuarter) continue;
+
+    if (/^Start on:/i.test(line)) {
+      data.quarters[currentQuarter].startOn = splitNames(line.replace(/^Start on:/i, ""));
+      continue;
+    }
+
+    if (/^\d+\s*min$/i.test(line)) {
+      pendingStep = { label: line, off: [], on: [] };
+      data.quarters[currentQuarter].steps.push(pendingStep);
+      continue;
+    }
+
+    if (/^Off:/i.test(line) && pendingStep) {
+      pendingStep.off = splitNames(line.replace(/^Off:/i, ""));
+      continue;
+    }
+
+    if (/^On:/i.test(line) && pendingStep) {
+      pendingStep.on = splitNames(line.replace(/^On:/i, ""));
+      continue;
+    }
+  }
+
+  return data;
+}
+
+function buildTimeline(parsed: ParsedData): TimelineStep[] {
+  const initialOn = [...parsed.starting18.backs, ...parsed.starting18.mids, ...parsed.starting18.forwards];
+  const initialBench = [...parsed.bench];
+
+  const timeline: TimelineStep[] = [
+    {
+      id: "START",
+      quarter: "START",
+      label: "Start",
+      on: [],
+      off: [],
+      currentOn: initialOn,
+      currentBench: initialBench,
+    },
+  ];
+
+  let currentOn = [...initialOn];
+  let currentBench = [...initialBench];
+
+  (["Q1", "Q2", "Q3", "Q4"] as const).forEach((quarter) => {
+    const quarterData = parsed.quarters[quarter];
+
+    if (quarterData.startOn.length > 0) {
+      const stepOn = quarterData.startOn.filter(Boolean);
+      const stepOff: string[] = [];
+
+      stepOn.forEach((playerOn) => {
+        if (!currentBench.includes(playerOn)) return;
+        const playerOff = currentOn.find((player) => !stepOn.includes(player));
+        if (!playerOff) return;
+
+        currentOn = currentOn.filter((name) => name !== playerOff);
+        currentBench = currentBench.filter((name) => name !== playerOn);
+        currentOn.push(playerOn);
+        currentBench.push(playerOff);
+        stepOff.push(playerOff);
+      });
+
+      timeline.push({
+        id: `${quarter}-START`,
+        quarter,
+        label: "Start",
+        on: stepOn,
+        off: stepOff,
+        currentOn: [...currentOn],
+        currentBench: [...currentBench],
+      });
+    } else {
+      timeline.push({
+        id: `${quarter}-START`,
+        quarter,
+        label: "Start",
+        on: [],
+        off: [],
+        currentOn: [...currentOn],
+        currentBench: [...currentBench],
+      });
+    }
+
+    quarterData.steps.forEach((step, index) => {
+      const stepOff = step.off.filter(Boolean);
+      const stepOn = step.on.filter(Boolean);
+
+      stepOff.forEach((player) => {
+        currentOn = currentOn.filter((name) => name !== player);
+        if (!currentBench.includes(player)) currentBench.push(player);
+      });
+
+      stepOn.forEach((player) => {
+        currentBench = currentBench.filter((name) => name !== player);
+        if (!currentOn.includes(player)) currentOn.push(player);
+      });
+
+      timeline.push({
+        id: `${quarter}-${index}-${step.label}`,
+        quarter,
+        label: step.label,
+        on: stepOn,
+        off: stepOff,
+        currentOn: [...currentOn],
+        currentBench: [...currentBench],
+      });
+    });
+  });
+
+  return timeline;
+}
+
+function groupPlayersByRole(players: string[]) {
+  return {
+    backs: players.filter((name) => PLAYER_ROLES[name as keyof typeof PLAYER_ROLES] === "back"),
+    mids: players.filter((name) => PLAYER_ROLES[name as keyof typeof PLAYER_ROLES] === "mid"),
+    forwards: players.filter((name) => PLAYER_ROLES[name as keyof typeof PLAYER_ROLES] === "forward"),
+    others: players.filter((name) => !(name in PLAYER_ROLES)),
+  };
+}
+
+function quarterFromStep(step: TimelineStep): "Q1" | "Q2" | "Q3" | "Q4" {
+  return step.quarter === "START" ? "Q1" : (step.quarter as "Q1" | "Q2" | "Q3" | "Q4");
+}
+
+function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-3xl border border-zinc-200 bg-white shadow-sm overflow-hidden">
+      <div className="px-5 pt-5">
+        <h2 className="m-0 text-xl font-bold tracking-tight text-zinc-900">{title}</h2>
+      </div>
+      <div className="p-5">{children}</div>
+    </div>
+  );
+}
+
+function Pill({ name, active = false }: { name: string; active?: boolean }) {
+  return (
+    <div
+      className={[
+        "min-h-11 rounded-2xl border px-3 py-2 text-sm font-semibold flex items-center",
+        active ? "border-black bg-black text-white" : "border-zinc-200 bg-white text-zinc-900",
+      ].join(" ")}
+    >
+      {name}
+    </div>
+  );
+}
+
+function PillGrid({ players, active = false }: { players: string[]; active?: boolean }) {
+  if (!players.length) {
+    return <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-5 text-center text-sm text-zinc-400">—</div>;
+  }
+
+  return (
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(118px,1fr))] gap-2.5">
+      {players.map((player) => (
+        <Pill key={`${player}-${active ? "on" : "off"}`} name={player} active={active} />
+      ))}
+    </div>
+  );
+}
+
+function TagList({ players, dark = false }: { players: string[]; dark?: boolean }) {
+  if (!players.length) {
+    return <span className="text-sm opacity-60">—</span>;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {players.map((player) => (
+        <span
+          key={`${player}-${dark ? "dark" : "light"}`}
+          className={[
+            "rounded-full border px-2.5 py-1 text-xs font-bold",
+            dark ? "border-black bg-black text-white" : "border-zinc-200 bg-zinc-100 text-zinc-900",
+          ].join(" ")}
+        >
+          {player}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+export default function FootyRotationManagerApp() {
+  const [rawText, setRawText] = useState(DEFAULT_TEXT);
+  const [teamName, setTeamName] = useState("Rotations");
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeQuarter, setActiveQuarter] = useState<"Q1" | "Q2" | "Q3" | "Q4">("Q1");
+
+  const parsed = useMemo(() => parseRotationText(rawText), [rawText]);
+  const timeline = useMemo(() => buildTimeline(parsed), [parsed]);
+
+  const safeActiveIndex = Math.min(activeIndex, Math.max(0, timeline.length - 1));
+  const activeStep = timeline[safeActiveIndex] || timeline[0];
+
+  const visibleSteps = useMemo(
+    () => timeline.filter((step) => step.quarter === activeQuarter || (activeQuarter === "Q1" && step.quarter === "START")),
+    [timeline, activeQuarter],
+  );
+
+  const groupedOn = groupPlayersByRole(activeStep.currentOn);
+
+  const jumpToStep = (index: number) => {
+    setActiveIndex(index);
+    setActiveQuarter(quarterFromStep(timeline[index]));
+  };
+
+  const handleQuarterClick = (quarter: "Q1" | "Q2" | "Q3" | "Q4") => {
+    setActiveQuarter(quarter);
+    const firstIndex = timeline.findIndex((step) => step.quarter === quarter || (quarter === "Q1" && step.quarter === "START"));
+    setActiveIndex(firstIndex >= 0 ? firstIndex : 0);
+  };
+
+  return (
+    <div className="min-h-screen bg-stone-100 text-zinc-900">
+      <div className="mx-auto max-w-[1440px] p-4">
+        <div className="grid gap-6 xl:grid-cols-[360px_1fr]">
+          <div className="flex flex-col gap-6">
+            <Card title="Rotation Import">
+              <div className="flex flex-col gap-4">
+                <input
+                  className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none"
+                  value={teamName}
+                  onChange={(e) => setTeamName(e.target.value)}
+                />
+                <textarea
+                  className="min-h-[560px] w-full resize-y rounded-2xl border border-zinc-200 bg-white px-4 py-3 font-mono text-sm outline-none max-xl:min-h-[320px]"
+                  value={rawText}
+                  onChange={(e) => {
+                    setRawText(e.target.value);
+                    setActiveIndex(0);
+                    setActiveQuarter("Q1");
+                  }}
+                />
+              </div>
+            </Card>
+
+            <Card title="Bench">
+              <PillGrid players={activeStep.currentBench} />
+            </Card>
+          </div>
+
+          <div className="flex flex-col gap-6">
+            <div className="rounded-3xl border border-zinc-200 bg-white shadow-sm">
+              <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-[0.12em] text-zinc-500">{teamName || "Rotations"}</div>
+                  <div className="mt-1 text-3xl font-extrabold tracking-tight md:text-[34px]">
+                    {activeStep.quarter === "START" ? "Game Start" : `${activeStep.quarter} · ${activeStep.label}`}
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2.5">
+                  <button
+                    className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 font-semibold disabled:opacity-45"
+                    onClick={() => safeActiveIndex > 0 && jumpToStep(safeActiveIndex - 1)}
+                    disabled={safeActiveIndex <= 0}
+                  >
+                    Prev
+                  </button>
+                  <button
+                    className="rounded-2xl border border-black bg-black px-4 py-3 font-semibold text-white disabled:opacity-45"
+                    onClick={() => safeActiveIndex < timeline.length - 1 && jumpToStep(safeActiveIndex + 1)}
+                    disabled={safeActiveIndex >= timeline.length - 1}
+                  >
+                    Next
+                  </button>
+                  <button
+                    className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 font-semibold"
+                    onClick={() => {
+                      setActiveIndex(0);
+                      setActiveQuarter("Q1");
+                    }}
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
+              {(["Q1", "Q2", "Q3", "Q4"] as const).map((quarter) => (
+                <button
+                  key={quarter}
+                  className={[
+                    "rounded-2xl border px-4 py-3 font-bold",
+                    activeQuarter === quarter ? "border-black bg-black text-white" : "border-zinc-200 bg-white text-zinc-900",
+                  ].join(" ")}
+                  onClick={() => handleQuarterClick(quarter)}
+                >
+                  {quarter}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+              <div className="flex flex-col gap-6">
+                <div className="grid gap-4 md:grid-cols-3">
+                  <Card title="Backs">
+                    <PillGrid players={groupedOn.backs} />
+                  </Card>
+                  <Card title="Mids">
+                    <PillGrid players={groupedOn.mids} />
+                  </Card>
+                  <Card title="Forwards">
+                    <PillGrid players={groupedOn.forwards} />
+                  </Card>
+                </div>
+
+                {groupedOn.others.length > 0 && (
+                  <Card title="Other">
+                    <PillGrid players={groupedOn.others} />
+                  </Card>
+                )}
+
+                <Card title="Bench Players">
+                  <PillGrid players={activeStep.currentBench} />
+                </Card>
+
+                <Card title="Current Change">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <p className="mb-3 text-xs font-extrabold uppercase tracking-[0.1em] text-zinc-500">Off</p>
+                      <PillGrid players={activeStep.off} />
+                    </div>
+                    <div>
+                      <p className="mb-3 text-xs font-extrabold uppercase tracking-[0.1em] text-zinc-500">On</p>
+                      <PillGrid players={activeStep.on} active />
+                    </div>
+                  </div>
+                </Card>
+              </div>
+
+              <Card title="Quarter Flow">
+                <div className="flex max-h-[920px] flex-col gap-3 overflow-auto pr-1">
+                  {visibleSteps.map((step) => {
+                    const index = timeline.findIndex((entry) => entry.id === step.id);
+                    const isActive = index === safeActiveIndex;
+                    return (
+                      <button
+                        key={step.id}
+                        onClick={() => jumpToStep(index)}
+                        className={[
+                          "w-full rounded-2xl border p-4 text-left",
+                          isActive ? "border-black bg-black text-white" : "border-zinc-200 bg-white text-zinc-900",
+                        ].join(" ")}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <div className="text-[11px] font-extrabold uppercase tracking-[0.12em] opacity-70">
+                              {step.quarter === "START" ? "Game" : step.quarter}
+                            </div>
+                            <div className="mt-1 text-base font-bold">{step.label}</div>
+                          </div>
+                          <div className="text-lg font-extrabold">{isActive ? "●" : ""}</div>
+                        </div>
+
+                        <div className={[
+                          "my-3 h-px",
+                          isActive ? "bg-white/15" : "bg-zinc-200",
+                        ].join(" ")} />
+
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div>
+                            <div className="mb-2 text-xs font-extrabold uppercase tracking-[0.1em] opacity-70">Off</div>
+                            <TagList players={step.off} />
+                          </div>
+                          <div>
+                            <div className="mb-2 text-xs font-extrabold uppercase tracking-[0.1em] opacity-70">On</div>
+                            <TagList players={step.on} dark />
+                          </div>
+                        </div>
+
+                        <div className="mt-4 grid gap-3">
+                          <div className="rounded-2xl border border-zinc-200 bg-white/90 p-3 text-zinc-900">
+                            <div className="mb-2 text-[11px] font-extrabold uppercase tracking-[0.12em] text-zinc-500">On Field After Change</div>
+                            <TagList players={step.currentOn} />
+                          </div>
+                          <div className="rounded-2xl border border-zinc-200 bg-white/90 p-3 text-zinc-900">
+                            <div className="mb-2 text-[11px] font-extrabold uppercase tracking-[0.12em] text-zinc-500">Bench After Change</div>
+                            <TagList players={step.currentBench} />
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </Card>
+            </div>
+
+            <Card title="Ruck">
+              <PillGrid players={parsed.ruck} />
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
