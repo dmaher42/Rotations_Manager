@@ -31,7 +31,7 @@
     .card-header { padding:16px 16px 0; }
     .card-title { margin:0; font-size:18px; font-weight:700; }
     .card-body { padding:16px; }
-    .hero { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:16px; background:linear-gradient(180deg, #ffffff 0%, #f8fbff 100%); }
+    .hero { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:16px; background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%); }
     .eyebrow { font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.12em; }
     .headline { margin-top:6px; font-size:30px; font-weight:800; line-height:1; color:var(--navy); }
     .actions, .tabs, .mode-tabs { display:grid; gap:8px; }
@@ -39,8 +39,10 @@
     .tabs { grid-template-columns:repeat(4,1fr); }
     .mode-tabs { grid-template-columns:repeat(3,1fr); }
     button, input, textarea { font:inherit; }
-    .btn, .tab, .mode-tab { border:1px solid var(--border); background:#fff; color:var(--text); border-radius:14px; padding:11px 12px; font-weight:700; cursor:pointer; }
+    .btn, .tab, .mode-tab, .toggle-btn { border:1px solid var(--border); background:#fff; color:var(--text); border-radius:14px; padding:11px 12px; font-weight:700; cursor:pointer; }
     .btn.primary, .tab.active, .mode-tab.active { background:var(--navy); color:#fff; border-color:var(--navy); }
+    .toggle-btn { width:100%; background:var(--slate-soft); }
+    .toggle-btn.active { background:var(--navy-soft); border-color:#bfd3ef; color:var(--navy); }
     .btn:disabled { opacity:.45; cursor:default; }
     .input, .textarea { width:100%; border:1px solid var(--border); border-radius:14px; padding:12px 14px; background:#fff; color:var(--text); }
     .textarea { min-height:320px; resize:vertical; font-family:monospace; font-size:13px; line-height:1.45; }
@@ -79,16 +81,30 @@
     .section-accent { display:inline-flex; align-items:center; gap:8px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.1em; }
     .dot { width:10px; height:10px; border-radius:999px; display:inline-block; }
     .dot.now { background:var(--navy); }
-    .dot.off { background:var(--red); }
-    .dot.on { background:var(--green); }
     .dot.next { background:var(--blue); }
     .dot.bench { background:var(--amber); }
-    @media (max-width:900px) { .live-grid, .team-grid, .status-grid { grid-template-columns:1fr; } }
-    @media (max-width:720px) { .tabs, .mode-tabs, .actions { grid-template-columns:repeat(2,1fr); grid-auto-flow:unset; } .hero { flex-direction:column; align-items:flex-start; } .headline { font-size:26px; } }
+    .mobile-only { display:none; }
+    @media (max-width:900px) {
+      .live-grid, .team-grid, .status-grid { grid-template-columns:1fr; }
+    }
+    @media (max-width:720px) {
+      .app { padding:12px; gap:12px; }
+      .tabs, .mode-tabs, .actions { grid-template-columns:repeat(2,1fr); grid-auto-flow:unset; }
+      .hero { flex-direction:column; align-items:flex-start; padding:14px; }
+      .headline { font-size:24px; }
+      .card-header { padding:14px 14px 0; }
+      .card-body { padding:14px; }
+      .step-big { font-size:24px; }
+      .pill-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .pill { min-height:46px; font-size:15px; padding:11px 12px; }
+      .flow-step { padding:12px; }
+      .mobile-only { display:block; }
+      .desktop-list-open .panel-list { display:block; }
+    }
   </style>
 </head>
 <body>
-  <div class="app">
+  <div class="app" id="appRoot">
     <section class="card">
       <div class="hero">
         <div>
@@ -145,7 +161,11 @@
         <div class="card-body"><div id="benchGrid" class="pill-grid"></div></div>
       </section>
 
-      <section class="card panel-list">
+      <div class="mobile-only">
+        <button id="toggleListBtn" class="toggle-btn">Show rotation list</button>
+      </div>
+
+      <section class="card panel-list hidden" id="rotationListCard">
         <div class="card-header"><h2 class="card-title">Rotation List</h2></div>
         <div class="card-body"><div id="flowList" class="flow"></div></div>
       </section>
@@ -229,9 +249,9 @@ Off: Archer (J), Oskar F, Lachlan (C)
 On: Blake H, Chase, Archer (M)
 
 Ruck: Ben M, Ted, Archer (M)`;
-    const state = { rawText: DEFAULT_TEXT, teamName: 'Rotations', activeIndex: 0, activeQuarter: 'Q1', activeMode: 'live' };
+    const state = { rawText: DEFAULT_TEXT, teamName: 'Rotations', activeIndex: 0, activeQuarter: 'Q1', activeMode: 'live', showList: false };
     const els = {
-      teamName: document.getElementById('teamName'), rotationInput: document.getElementById('rotationInput'), heroEyebrow: document.getElementById('heroEyebrow'), heroHeadline: document.getElementById('heroHeadline'), prevBtn: document.getElementById('prevBtn'), nextBtn: document.getElementById('nextBtn'), resetBtn: document.getElementById('resetBtn'), modeTabs: document.getElementById('modeTabs'), quarterTabs: document.getElementById('quarterTabs'), liveView: document.getElementById('liveView'), teamView: document.getElementById('teamView'), importView: document.getElementById('importView'), nowQuarter: document.getElementById('nowQuarter'), nowLabel: document.getElementById('nowLabel'), nextQuarter: document.getElementById('nextQuarter'), nextLabel: document.getElementById('nextLabel'), nextTags: document.getElementById('nextTags'), backsGrid: document.getElementById('backsGrid'), midsGrid: document.getElementById('midsGrid'), forwardsGrid: document.getElementById('forwardsGrid'), othersGrid: document.getElementById('othersGrid'), othersCard: document.getElementById('othersCard'), benchGrid: document.getElementById('benchGrid'), offGrid: document.getElementById('offGrid'), onGrid: document.getElementById('onGrid'), flowList: document.getElementById('flowList'), ruckGrid: document.getElementById('ruckGrid') };
+      appRoot: document.getElementById('appRoot'), teamName: document.getElementById('teamName'), rotationInput: document.getElementById('rotationInput'), heroEyebrow: document.getElementById('heroEyebrow'), heroHeadline: document.getElementById('heroHeadline'), prevBtn: document.getElementById('prevBtn'), nextBtn: document.getElementById('nextBtn'), resetBtn: document.getElementById('resetBtn'), modeTabs: document.getElementById('modeTabs'), quarterTabs: document.getElementById('quarterTabs'), liveView: document.getElementById('liveView'), teamView: document.getElementById('teamView'), importView: document.getElementById('importView'), nowQuarter: document.getElementById('nowQuarter'), nowLabel: document.getElementById('nowLabel'), nextQuarter: document.getElementById('nextQuarter'), nextLabel: document.getElementById('nextLabel'), nextTags: document.getElementById('nextTags'), backsGrid: document.getElementById('backsGrid'), midsGrid: document.getElementById('midsGrid'), forwardsGrid: document.getElementById('forwardsGrid'), othersGrid: document.getElementById('othersGrid'), othersCard: document.getElementById('othersCard'), benchGrid: document.getElementById('benchGrid'), offGrid: document.getElementById('offGrid'), onGrid: document.getElementById('onGrid'), flowList: document.getElementById('flowList'), ruckGrid: document.getElementById('ruckGrid'), toggleListBtn: document.getElementById('toggleListBtn'), rotationListCard: document.getElementById('rotationListCard') };
     function splitNames(text) { return text.split(',').map(n => n.trim()).filter(Boolean); }
     function cleanLine(line) { return line.replace(/\u00a0/g, ' ').trim(); }
     function parseRotationText(input) {
@@ -256,7 +276,7 @@ Ruck: Ben M, Ted, Archer (M)`;
     function buildTimeline(parsed) {
       const initialOn = [...parsed.starting18.backs, ...parsed.starting18.mids, ...parsed.starting18.forwards];
       const initialBench = [...parsed.bench];
-      const timeline = [{ id: 'START', quarter: 'START', label: 'Start', on: [], off: [], currentOn: initialOn, currentBench: initialBench }];
+      const timeline = [{ id:'START', quarter:'START', label:'Start', on:[], off:[], currentOn:initialOn, currentBench:initialBench }];
       let currentOn = [...initialOn]; let currentBench = [...initialBench];
       ['Q1','Q2','Q3','Q4'].forEach((quarter) => {
         const quarterData = parsed.quarters[quarter];
@@ -270,15 +290,15 @@ Ruck: Ben M, Ted, Archer (M)`;
             currentBench = currentBench.filter((name) => name !== playerOn);
             currentOn.push(playerOn); currentBench.push(playerOff); stepOff.push(playerOff);
           });
-          timeline.push({ id: quarter + '-START', quarter, label: 'Start', on: stepOn, off: stepOff, currentOn: [...currentOn], currentBench: [...currentBench] });
+          timeline.push({ id:quarter + '-START', quarter, label:'Start', on:stepOn, off:stepOff, currentOn:[...currentOn], currentBench:[...currentBench] });
         } else {
-          timeline.push({ id: quarter + '-START', quarter, label: 'Start', on: [], off: [], currentOn: [...currentOn], currentBench: [...currentBench] });
+          timeline.push({ id:quarter + '-START', quarter, label:'Start', on:[], off:[], currentOn:[...currentOn], currentBench:[...currentBench] });
         }
         quarterData.steps.forEach((step, index) => {
           const stepOff = step.off.filter(Boolean); const stepOn = step.on.filter(Boolean);
           stepOff.forEach((player) => { currentOn = currentOn.filter((name) => name !== player); if (!currentBench.includes(player)) currentBench.push(player); });
           stepOn.forEach((player) => { currentBench = currentBench.filter((name) => name !== player); if (!currentOn.includes(player)) currentOn.push(player); });
-          timeline.push({ id: quarter + '-' + index + '-' + step.label, quarter, label: step.label, on: stepOn, off: stepOff, currentOn: [...currentOn], currentBench: [...currentBench] });
+          timeline.push({ id:quarter + '-' + index + '-' + step.label, quarter, label:step.label, on:stepOn, off:stepOff, currentOn:[...currentOn], currentBench:[...currentBench] });
         });
       });
       return timeline;
@@ -332,6 +352,9 @@ Ruck: Ben M, Ted, Archer (M)`;
       els.liveView.classList.toggle('hidden', state.activeMode !== 'live'); els.teamView.classList.toggle('hidden', state.activeMode !== 'team'); els.importView.classList.toggle('hidden', state.activeMode !== 'import');
       els.nowQuarter.textContent = activeStep.quarter === 'START' ? 'GAME' : activeStep.quarter; els.nowLabel.textContent = activeStep.label; renderPills(els.offGrid, activeStep.off, 'off'); renderPills(els.onGrid, activeStep.on, 'on'); renderPills(els.benchGrid, activeStep.currentBench, 'bench');
       if (nextStep) { els.nextQuarter.textContent = nextStep.quarter === 'START' ? 'GAME' : nextStep.quarter; els.nextLabel.textContent = nextStep.label; renderTags(els.nextTags, nextStep.off, nextStep.on); } else { els.nextQuarter.textContent = 'END'; els.nextLabel.textContent = 'No next step'; els.nextTags.innerHTML = '<span class="tag next">—</span>'; }
+      els.rotationListCard.classList.toggle('hidden', !state.showList);
+      els.toggleListBtn.textContent = state.showList ? 'Hide rotation list' : 'Show rotation list';
+      els.toggleListBtn.classList.toggle('active', state.showList);
       els.flowList.innerHTML = ''; visibleSteps.forEach((step) => { const index = timeline.findIndex((entry) => entry.id === step.id); els.flowList.appendChild(buildStepCard(step, index, index === state.activeIndex)); });
       renderPills(els.backsGrid, grouped.backs, 'team'); renderPills(els.midsGrid, grouped.mids, 'team'); renderPills(els.forwardsGrid, grouped.forwards, 'team'); renderPills(els.ruckGrid, parsed.ruck, 'team');
       if (grouped.others.length) { els.othersCard.classList.remove('hidden'); renderPills(els.othersGrid, grouped.others, 'team'); } else { els.othersCard.classList.add('hidden'); }
@@ -342,7 +365,8 @@ Ruck: Ben M, Ted, Archer (M)`;
     els.rotationInput.addEventListener('input', (e) => { state.rawText = e.target.value; state.activeIndex = 0; state.activeQuarter = 'Q1'; render(); });
     els.prevBtn.addEventListener('click', () => { if (state.activeIndex > 0) { state.activeIndex -= 1; const parsed = parseRotationText(state.rawText); const timeline = buildTimeline(parsed); state.activeQuarter = quarterFromStep(timeline[state.activeIndex]); render(); } });
     els.nextBtn.addEventListener('click', () => { const parsed = parseRotationText(state.rawText); const timeline = buildTimeline(parsed); if (state.activeIndex < timeline.length - 1) { state.activeIndex += 1; state.activeQuarter = quarterFromStep(timeline[state.activeIndex]); render(); } });
-    els.resetBtn.addEventListener('click', () => { state.activeIndex = 0; state.activeQuarter = 'Q1'; state.activeMode = 'live'; render(); });
+    els.resetBtn.addEventListener('click', () => { state.activeIndex = 0; state.activeQuarter = 'Q1'; state.activeMode = 'live'; state.showList = false; render(); });
+    els.toggleListBtn.addEventListener('click', () => { state.showList = !state.showList; render(); });
     render();
   </script>
 </body>
