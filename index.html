@@ -17,35 +17,34 @@
     }
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--bg); color: var(--text); font-family: Inter, Arial, sans-serif; }
-    .app { max-width: 1280px; margin: 0 auto; padding: 16px; }
-    .layout { display: grid; grid-template-columns: 320px 1fr; gap: 20px; }
-    .stack { display: flex; flex-direction: column; gap: 20px; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 22px; box-shadow: var(--shadow); overflow: hidden; }
-    .card-header { padding: 18px 18px 0; }
+    .app { max-width: 1180px; margin: 0 auto; padding: 16px; }
+    .stack { display: flex; flex-direction: column; gap: 16px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow); overflow: hidden; }
+    .card-header { padding: 16px 16px 0; }
     .card-title { margin: 0; font-size: 18px; font-weight: 700; }
-    .card-body { padding: 18px; }
-    .hero { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 18px; }
+    .card-body { padding: 16px; }
+    .hero { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px; }
     .eyebrow { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .12em; }
-    .headline { margin-top: 6px; font-size: 32px; font-weight: 800; line-height: 1; }
-    .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .headline { margin-top: 6px; font-size: 30px; font-weight: 800; line-height: 1; }
+    .actions, .tabs, .mode-tabs { display: grid; gap: 8px; }
+    .actions { grid-auto-flow: column; grid-auto-columns: 1fr; }
+    .tabs { grid-template-columns: repeat(4, 1fr); }
+    .mode-tabs { grid-template-columns: repeat(3, 1fr); }
     button, input, textarea { font: inherit; }
-    .btn { border: 1px solid var(--border); background: #fff; color: var(--text); border-radius: 14px; padding: 11px 14px; font-weight: 600; cursor: pointer; }
-    .btn.primary { background: var(--black); color: #fff; border-color: var(--black); }
+    .btn, .tab, .mode-tab { border: 1px solid var(--border); background: #fff; color: var(--text); border-radius: 14px; padding: 11px 12px; font-weight: 700; cursor: pointer; }
+    .btn.primary, .tab.active, .mode-tab.active { background: var(--black); color: #fff; border-color: var(--black); }
     .btn:disabled { opacity: .45; cursor: default; }
     .input, .textarea { width: 100%; border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; background: #fff; color: var(--text); }
-    .textarea { min-height: 300px; resize: vertical; font-family: monospace; font-size: 13px; line-height: 1.45; }
-    .tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-    .tab { border: 1px solid var(--border); background: #fff; color: var(--text); border-radius: 14px; padding: 11px; font-weight: 700; cursor: pointer; }
-    .tab.active { background: var(--black); color: #fff; border-color: var(--black); }
-    .main-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; }
-    .three-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .textarea { min-height: 320px; resize: vertical; font-family: monospace; font-size: 13px; line-height: 1.45; }
+    .live-grid { display: grid; grid-template-columns: 1.2fr .8fr; gap: 16px; }
+    .team-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
     .pill-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap: 8px; }
-    .pill { border: 1px solid var(--border); background: #fff; border-radius: 12px; padding: 9px 11px; font-size: 14px; font-weight: 600; min-height: 42px; display: flex; align-items: center; }
+    .pill { border: 1px solid var(--border); background: #fff; border-radius: 12px; padding: 10px 11px; font-size: 14px; font-weight: 600; min-height: 42px; display: flex; align-items: center; }
     .pill.active { background: var(--black); color: #fff; border-color: var(--black); }
     .empty { border: 1px dashed var(--border); border-radius: 12px; padding: 16px; color: #a1a1aa; font-size: 14px; text-align: center; background: var(--soft); }
     .mini-title { margin: 0 0 10px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
     .change-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; }
-    .flow { display: flex; flex-direction: column; gap: 10px; }
+    .flow { display: flex; flex-direction: column; gap: 10px; max-height: 540px; overflow: auto; }
     .flow-step { width: 100%; text-align: left; background: #fff; color: var(--text); border: 1px solid var(--border); border-radius: 14px; padding: 14px; cursor: pointer; }
     .flow-step.active { background: var(--black); color: #fff; border-color: var(--black); }
     .flow-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
@@ -55,75 +54,82 @@
     .tag { border-radius: 999px; padding: 6px 9px; font-size: 11px; font-weight: 700; background: #f4f4f5; color: var(--text); border: 1px solid var(--border); }
     .tag.dark { background: var(--black); color: #fff; border-color: var(--black); }
     .flow-step.active .tag, .flow-step.active .tag.dark { background: #fff; color: var(--text); border-color: #fff; }
-    .section-title { margin: 0 0 12px; font-size: 14px; font-weight: 800; }
-    @media (max-width: 980px) { .layout, .main-grid { grid-template-columns: 1fr; } }
-    @media (max-width: 720px) { .three-grid, .change-grid { grid-template-columns: 1fr; } .tabs { grid-template-columns: repeat(2,1fr); } .hero { flex-direction: column; align-items: flex-start; } .headline { font-size: 28px; } }
+    .hidden { display: none !important; }
+    .big-change { font-size: 15px; font-weight: 700; }
+    @media (max-width: 900px) { .live-grid, .team-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 720px) { .change-grid, .tabs, .mode-tabs, .actions { grid-template-columns: repeat(2,1fr); grid-auto-flow: unset; } .hero { flex-direction: column; align-items: flex-start; } .headline { font-size: 26px; } }
   </style>
 </head>
 <body>
-  <div class="app">
-    <div class="layout">
-      <div class="stack">
-        <section class="card">
-          <div class="card-header"><h2 class="card-title">Rotation Import</h2></div>
-          <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
-            <input id="teamName" class="input" value="Rotations">
-            <textarea id="rotationInput" class="textarea"></textarea>
-          </div>
-        </section>
-        <section class="card">
-          <div class="card-header"><h2 class="card-title">Bench Players</h2></div>
-          <div class="card-body"><div id="benchGridSide" class="pill-grid"></div></div>
-        </section>
-      </div>
-      <div class="stack">
-        <section class="card">
-          <div class="hero">
-            <div>
-              <div id="heroEyebrow" class="eyebrow">Rotations</div>
-              <div id="heroHeadline" class="headline">Game Start</div>
-            </div>
-            <div class="actions">
-              <button id="prevBtn" class="btn">Prev</button>
-              <button id="nextBtn" class="btn primary">Next</button>
-              <button id="resetBtn" class="btn">Reset</button>
-            </div>
-          </div>
-        </section>
-        <div class="tabs" id="quarterTabs"></div>
-        <div class="main-grid">
-          <div class="stack">
-            <section class="card">
-              <div class="card-header"><h2 class="card-title">Current Change</h2></div>
-              <div class="card-body">
-                <div class="change-grid">
-                  <div>
-                    <p class="mini-title">Off</p>
-                    <div id="offGrid" class="pill-grid"></div>
-                  </div>
-                  <div>
-                    <p class="mini-title">On</p>
-                    <div id="onGrid" class="pill-grid"></div>
-                  </div>
-                </div>
-              </div>
-            </section>
-            <div class="three-grid">
-              <section class="card"><div class="card-header"><h3 class="card-title">Backs</h3></div><div class="card-body"><div id="backsGrid" class="pill-grid"></div></div></section>
-              <section class="card"><div class="card-header"><h3 class="card-title">Mids</h3></div><div class="card-body"><div id="midsGrid" class="pill-grid"></div></div></section>
-              <section class="card"><div class="card-header"><h3 class="card-title">Forwards</h3></div><div class="card-body"><div id="forwardsGrid" class="pill-grid"></div></div></section>
-            </div>
-            <section id="othersCard" class="card" style="display:none;"><div class="card-header"><h3 class="card-title">Other</h3></div><div class="card-body"><div id="othersGrid" class="pill-grid"></div></div></section>
-            <section class="card"><div class="card-header"><h3 class="card-title">Ruck</h3></div><div class="card-body"><div id="ruckGrid" class="pill-grid"></div></div></section>
-          </div>
-          <section class="card">
-            <div class="card-header"><h2 class="card-title">Rotation List</h2></div>
-            <div class="card-body"><div id="flowList" class="flow"></div></div>
-          </section>
+  <div class="app stack">
+    <section class="card">
+      <div class="hero">
+        <div>
+          <div id="heroEyebrow" class="eyebrow">Rotations</div>
+          <div id="heroHeadline" class="headline">Game Start</div>
+        </div>
+        <div class="actions">
+          <button id="prevBtn" class="btn">Prev</button>
+          <button id="nextBtn" class="btn primary">Next</button>
+          <button id="resetBtn" class="btn">Reset</button>
         </div>
       </div>
-    </div>
+    </section>
+
+    <div class="mode-tabs" id="modeTabs"></div>
+    <div class="tabs" id="quarterTabs"></div>
+
+    <section id="liveView" class="stack">
+      <div class="live-grid">
+        <div class="stack">
+          <section class="card">
+            <div class="card-header"><h2 class="card-title">Current Change</h2></div>
+            <div class="card-body">
+              <div class="change-grid">
+                <div>
+                  <p class="mini-title">Off</p>
+                  <div id="offGrid" class="pill-grid"></div>
+                </div>
+                <div>
+                  <p class="mini-title">On</p>
+                  <div id="onGrid" class="pill-grid"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section class="card">
+            <div class="card-header"><h2 class="card-title">Bench Players</h2></div>
+            <div class="card-body"><div id="benchGrid" class="pill-grid"></div></div>
+          </section>
+        </div>
+        <section class="card">
+          <div class="card-header"><h2 class="card-title">Rotation List</h2></div>
+          <div class="card-body"><div id="flowList" class="flow"></div></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="teamView" class="stack hidden">
+      <div class="team-grid">
+        <section class="card"><div class="card-header"><h2 class="card-title">Backs</h2></div><div class="card-body"><div id="backsGrid" class="pill-grid"></div></div></section>
+        <section class="card"><div class="card-header"><h2 class="card-title">Mids</h2></div><div class="card-body"><div id="midsGrid" class="pill-grid"></div></div></section>
+        <section class="card"><div class="card-header"><h2 class="card-title">Forwards</h2></div><div class="card-body"><div id="forwardsGrid" class="pill-grid"></div></div></section>
+      </div>
+      <section id="othersCard" class="card hidden"><div class="card-header"><h2 class="card-title">Other</h2></div><div class="card-body"><div id="othersGrid" class="pill-grid"></div></div></section>
+      <section class="card"><div class="card-header"><h2 class="card-title">Ruck</h2></div><div class="card-body"><div id="ruckGrid" class="pill-grid"></div></div></section>
+    </section>
+
+    <section id="importView" class="stack hidden">
+      <section class="card">
+        <div class="card-header"><h2 class="card-title">Rotation Import</h2></div>
+        <div class="card-body stack">
+          <input id="teamName" class="input" value="Rotations">
+          <textarea id="rotationInput" class="textarea"></textarea>
+        </div>
+      </section>
+    </section>
   </div>
+
   <script>
     const PLAYER_ROLES = {
       'Patty B': 'back', 'Archer (J)': 'mid', 'Henry M': 'back', 'Henry S': 'back', Charlie: 'back', Lucas: 'back', Denzel: 'back', Sol: 'back', 'Blake H': 'mid', Toby: 'mid', Levi: 'back', Mayer: 'mid', Mitch: 'mid', 'Ben M': 'mid', Ted: 'mid', 'Archer (M)': 'mid', Brodie: 'forward', 'Archer (F)': 'forward', Chase: 'forward', 'Blake F': 'forward', 'Oskar F': 'forward', 'Lachlan (C)': 'forward', 'Lachie G': 'forward', Mason: 'forward', 'Ben P': 'forward'
@@ -181,10 +187,9 @@ Off: Archer (J), Oskar F, Lachlan (C)
 On: Blake H, Chase, Archer (M)
 
 Ruck: Ben M, Ted, Archer (M)`;
-    const state = { rawText: DEFAULT_TEXT, teamName: 'Rotations', activeIndex: 0, activeQuarter: 'Q1' };
+    const state = { rawText: DEFAULT_TEXT, teamName: 'Rotations', activeIndex: 0, activeQuarter: 'Q1', activeMode: 'live' };
     const els = {
-      teamName: document.getElementById('teamName'), rotationInput: document.getElementById('rotationInput'), heroEyebrow: document.getElementById('heroEyebrow'), heroHeadline: document.getElementById('heroHeadline'), prevBtn: document.getElementById('prevBtn'), nextBtn: document.getElementById('nextBtn'), resetBtn: document.getElementById('resetBtn'), quarterTabs: document.getElementById('quarterTabs'), backsGrid: document.getElementById('backsGrid'), midsGrid: document.getElementById('midsGrid'), forwardsGrid: document.getElementById('forwardsGrid'), othersGrid: document.getElementById('othersGrid'), othersCard: document.getElementById('othersCard'), benchGridSide: document.getElementById('benchGridSide'), offGrid: document.getElementById('offGrid'), onGrid: document.getElementById('onGrid'), flowList: document.getElementById('flowList'), ruckGrid: document.getElementById('ruckGrid')
-    };
+      teamName: document.getElementById('teamName'), rotationInput: document.getElementById('rotationInput'), heroEyebrow: document.getElementById('heroEyebrow'), heroHeadline: document.getElementById('heroHeadline'), prevBtn: document.getElementById('prevBtn'), nextBtn: document.getElementById('nextBtn'), resetBtn: document.getElementById('resetBtn'), modeTabs: document.getElementById('modeTabs'), quarterTabs: document.getElementById('quarterTabs'), liveView: document.getElementById('liveView'), teamView: document.getElementById('teamView'), importView: document.getElementById('importView'), backsGrid: document.getElementById('backsGrid'), midsGrid: document.getElementById('midsGrid'), forwardsGrid: document.getElementById('forwardsGrid'), othersGrid: document.getElementById('othersGrid'), othersCard: document.getElementById('othersCard'), benchGrid: document.getElementById('benchGrid'), offGrid: document.getElementById('offGrid'), onGrid: document.getElementById('onGrid'), flowList: document.getElementById('flowList'), ruckGrid: document.getElementById('ruckGrid') };
     function splitNames(text) { return text.split(',').map(n => n.trim()).filter(Boolean); }
     function cleanLine(line) { return line.replace(/\u00a0/g, ' ').trim(); }
     function parseRotationText(input) {
@@ -258,6 +263,15 @@ Ruck: Ben M, Ted, Archer (M)`;
       btn.innerHTML = '<div class="flow-top"><div><div class="flow-quarter">' + (step.quarter === 'START' ? 'Game' : step.quarter) + '</div><div class="flow-label">' + step.label + '</div></div><div style="font-size:18px;font-weight:800;">' + (isActive ? '●' : '') + '</div></div><div class="tag-wrap">' + (step.off.length ? step.off.map((p) => '<span class="tag">Off: ' + p + '</span>').join('') : '') + (step.on.length ? step.on.map((p) => '<span class="tag dark">On: ' + p + '</span>').join('') : '') + '</div>';
       return btn;
     }
+    function renderModeTabs() {
+      const modes = [{key:'live',label:'Live'},{key:'team',label:'Team'},{key:'import',label:'Import'}];
+      els.modeTabs.innerHTML = '';
+      modes.forEach((mode) => {
+        const btn = document.createElement('button'); btn.className = 'mode-tab' + (state.activeMode === mode.key ? ' active' : ''); btn.textContent = mode.label;
+        btn.addEventListener('click', () => { state.activeMode = mode.key; render(); });
+        els.modeTabs.appendChild(btn);
+      });
+    }
     function renderQuarterTabs() {
       const quarters = ['Q1','Q2','Q3','Q4']; els.quarterTabs.innerHTML = '';
       quarters.forEach((quarter) => {
@@ -274,8 +288,12 @@ Ruck: Ben M, Ted, Archer (M)`;
       const parsed = parseRotationText(state.rawText); const timeline = buildTimeline(parsed); const activeStep = timeline[state.activeIndex] || timeline[0];
       const visibleSteps = timeline.filter((step) => step.quarter === state.activeQuarter || (state.activeQuarter === 'Q1' && step.quarter === 'START')); const grouped = groupPlayersByRole(activeStep.currentOn);
       els.heroEyebrow.textContent = state.teamName || 'Rotations'; els.heroHeadline.textContent = activeStep.quarter === 'START' ? 'Game Start' : activeStep.quarter + ' · ' + activeStep.label;
-      renderQuarterTabs(); renderPills(els.backsGrid, grouped.backs); renderPills(els.midsGrid, grouped.mids); renderPills(els.forwardsGrid, grouped.forwards); renderPills(els.benchGridSide, activeStep.currentBench); renderPills(els.offGrid, activeStep.off); renderPills(els.onGrid, activeStep.on, true); renderPills(els.ruckGrid, parsed.ruck);
-      if (grouped.others.length) { els.othersCard.style.display = 'block'; renderPills(els.othersGrid, grouped.others); } else { els.othersCard.style.display = 'none'; }
+      renderModeTabs(); renderQuarterTabs();
+      els.liveView.classList.toggle('hidden', state.activeMode !== 'live');
+      els.teamView.classList.toggle('hidden', state.activeMode !== 'team');
+      els.importView.classList.toggle('hidden', state.activeMode !== 'import');
+      renderPills(els.offGrid, activeStep.off); renderPills(els.onGrid, activeStep.on, true); renderPills(els.benchGrid, activeStep.currentBench); renderPills(els.backsGrid, grouped.backs); renderPills(els.midsGrid, grouped.mids); renderPills(els.forwardsGrid, grouped.forwards); renderPills(els.ruckGrid, parsed.ruck);
+      if (grouped.others.length) { els.othersCard.classList.remove('hidden'); renderPills(els.othersGrid, grouped.others); } else { els.othersCard.classList.add('hidden'); }
       els.flowList.innerHTML = ''; visibleSteps.forEach((step) => { const index = timeline.findIndex((entry) => entry.id === step.id); els.flowList.appendChild(buildStepCard(step, index, index === state.activeIndex)); });
       els.prevBtn.disabled = state.activeIndex <= 0; els.nextBtn.disabled = state.activeIndex >= timeline.length - 1;
     }
@@ -284,7 +302,7 @@ Ruck: Ben M, Ted, Archer (M)`;
     els.rotationInput.addEventListener('input', (e) => { state.rawText = e.target.value; state.activeIndex = 0; state.activeQuarter = 'Q1'; render(); });
     els.prevBtn.addEventListener('click', () => { if (state.activeIndex > 0) { state.activeIndex -= 1; const parsed = parseRotationText(state.rawText); const timeline = buildTimeline(parsed); state.activeQuarter = quarterFromStep(timeline[state.activeIndex]); render(); } });
     els.nextBtn.addEventListener('click', () => { const parsed = parseRotationText(state.rawText); const timeline = buildTimeline(parsed); if (state.activeIndex < timeline.length - 1) { state.activeIndex += 1; state.activeQuarter = quarterFromStep(timeline[state.activeIndex]); render(); } });
-    els.resetBtn.addEventListener('click', () => { state.activeIndex = 0; state.activeQuarter = 'Q1'; render(); });
+    els.resetBtn.addEventListener('click', () => { state.activeIndex = 0; state.activeQuarter = 'Q1'; state.activeMode = 'live'; render(); });
     render();
   </script>
 </body>
