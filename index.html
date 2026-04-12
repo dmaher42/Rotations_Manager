@@ -54,7 +54,7 @@
     .live-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
     .status-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
     .team-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
-    .pill-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:8px; }
+    .pill-grid, .selection-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:8px; }
     .pill { border:1px solid var(--border); background:#fff; border-radius:12px; padding:10px 11px; font-size:14px; font-weight:600; min-height:42px; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:4px; }
     .pill.off { background:var(--red-soft); border-color:#f5c2bd; color:var(--red); }
     .pill.on { background:var(--green-soft); border-color:#bfe7cb; color:var(--green); }
@@ -94,7 +94,6 @@
     .dot.override { background:var(--blue); }
     .mobile-only { display:none; }
     .override-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-    .selection-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:8px; }
     .helper-text { margin-top:10px; font-size:12px; color:var(--muted); }
     @media (max-width:900px) {
       .live-grid, .team-grid, .status-grid, .override-grid { grid-template-columns:1fr; }
@@ -173,7 +172,7 @@
                 <p class="mini-title">Off</p>
                 <div id="offGrid" class="pill-grid"></div>
               </div>
-              <div >
+              <div>
                 <p class="mini-title">On</p>
                 <div id="onGrid" class="pill-grid"></div>
               </div>
@@ -306,7 +305,6 @@ Ruck: Ben M, Ted, Archer (M)`;
     const state = { ...defaultState };
 
     const els = {
-      appRoot: document.getElementById('appRoot'),
       teamName: document.getElementById('teamName'),
       rotationInput: document.getElementById('rotationInput'),
       heroEyebrow: document.getElementById('heroEyebrow'),
@@ -345,9 +343,6 @@ Ruck: Ben M, Ted, Archer (M)`;
       rotationListCard: document.getElementById('rotationListCard')
     };
 
-    function splitNames(text) { return text.split(',').map((n) => n.trim()).filter(Boolean); }
-    function cleanLine(line) { return line.replace(/\u00a0/g, ' ').trim(); }
-
     function saveState() {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -373,8 +368,8 @@ Ruck: Ben M, Ted, Archer (M)`;
         if (!raw) return;
         const parsed = JSON.parse(raw);
         if (!parsed || typeof parsed !== 'object') return;
-        state.rawText = typeof parsed.rawText === 'string' ? parsed.rawText : defaultState.rawText;
-        state.teamName = typeof parsed.teamName === 'string' ? parsed.teamName : defaultState.teamName;
+        state.rawText = typeof parsed.rawText === 'string' && parsed.rawText.trim() ? parsed.rawText : defaultState.rawText;
+        state.teamName = typeof parsed.teamName === 'string' && parsed.teamName.trim() ? parsed.teamName : defaultState.teamName;
         state.activeIndex = Number.isInteger(parsed.activeIndex) ? parsed.activeIndex : defaultState.activeIndex;
         state.activeQuarter = typeof parsed.activeQuarter === 'string' ? parsed.activeQuarter : defaultState.activeQuarter;
         state.activeMode = typeof parsed.activeMode === 'string' ? parsed.activeMode : defaultState.activeMode;
@@ -388,10 +383,14 @@ Ruck: Ben M, Ted, Archer (M)`;
       }
     }
 
+    function splitNames(text) { return text.split(',').map((n) => n.trim()).filter(Boolean); }
+    function cleanLine(line) { return line.replace(/\u00a0/g, ' ').trim(); }
+
     function parseRotationText(input) {
       const lines = input.split(/\r?\n/).map(cleanLine).filter(Boolean);
       const data = { starting18: { backs: [], mids: [], forwards: [] }, bench: [], ruck: [], quarters: { Q1: { startOn: [], steps: [] }, Q2: { startOn: [], steps: [] }, Q3: { startOn: [], steps: [] }, Q4: { startOn: [], steps: [] } } };
-      let currentQuarter = null; let pendingStep = null;
+      let currentQuarter = null;
+      let pendingStep = null;
       for (const line of lines) {
         if (/^Backs:/i.test(line)) { data.starting18.backs = splitNames(line.replace(/^Backs:/i, '')); continue; }
         if (/^Mids:/i.test(line)) { data.starting18.mids = splitNames(line.replace(/^Mids:/i, '')); continue; }
@@ -411,36 +410,52 @@ Ruck: Ben M, Ted, Archer (M)`;
     function buildTimeline(parsed) {
       const initialOn = [...parsed.starting18.backs, ...parsed.starting18.mids, ...parsed.starting18.forwards];
       const initialBench = [...parsed.bench];
-      const timeline = [{ id:'START', quarter:'START', label:'Start', on:[], off:[], currentOn:initialOn, currentBench:initialBench }];
-      let currentOn = [...initialOn]; let currentBench = [...initialBench];
+      const timeline = [{ id:'START', quarter:'START', label:'Start', on:[], off:[], currentOn:[...initialOn], currentBench:[...initialBench] }];
+      let currentOn = [...initialOn];
+      let currentBench = [...initialBench];
       ['Q1','Q2','Q3','Q4'].forEach((quarter) => {
         const quarterData = parsed.quarters[quarter];
         if (quarterData.startOn.length > 0) {
-          const stepOn = quarterData.startOn.filter(Boolean); const stepOff = [];
+          const stepOn = quarterData.startOn.filter(Boolean);
+          const stepOff = [];
           stepOn.forEach((playerOn) => {
             if (!currentBench.includes(playerOn)) return;
             const playerOff = currentOn.find((player) => !stepOn.includes(player));
             if (!playerOff) return;
             currentOn = currentOn.filter((name) => name !== playerOff);
             currentBench = currentBench.filter((name) => name !== playerOn);
-            currentOn.push(playerOn); currentBench.push(playerOff); stepOff.push(playerOff);
+            currentOn.push(playerOn);
+            currentBench.push(playerOff);
+            stepOff.push(playerOff);
           });
-          timeline.push({ id:quarter + '-START', quarter, label:'Start', on:stepOn, off:stepOff, currentOn:[...currentOn], currentBench:[...currentBench] });
+          timeline.push({ id: quarter + '-START', quarter, label: 'Start', on: stepOn, off: stepOff, currentOn:[...currentOn], currentBench:[...currentBench] });
         } else {
-          timeline.push({ id:quarter + '-START', quarter, label:'Start', on:[], off:[], currentOn:[...currentOn], currentBench:[...currentBench] });
+          timeline.push({ id: quarter + '-START', quarter, label: 'Start', on: [], off: [], currentOn:[...currentOn], currentBench:[...currentBench] });
         }
         quarterData.steps.forEach((step, index) => {
-          const stepOff = step.off.filter(Boolean); const stepOn = step.on.filter(Boolean);
-          stepOff.forEach((player) => { currentOn = currentOn.filter((name) => name !== player); if (!currentBench.includes(player)) currentBench.push(player); });
-          stepOn.forEach((player) => { currentBench = currentBench.filter((name) => name !== player); if (!currentOn.includes(player)) currentOn.push(player); });
-          timeline.push({ id:quarter + '-' + index + '-' + step.label, quarter, label:step.label, on:stepOn, off:stepOff, currentOn:[...currentOn], currentBench:[....currentBench] });
+          const stepOff = step.off.filter(Boolean);
+          const stepOn = step.on.filter(Boolean);
+          stepOff.forEach((player) => {
+            currentOn = currentOn.filter((name) => name !== player);
+            if (!currentBench.includes(player)) currentBench.push(player);
+          });
+          stepOn.forEach((player) => {
+            currentBench = currentBench.filter((name) => name !== player);
+            if (!currentOn.includes(player)) currentOn.push(player);
+          });
+          timeline.push({ id: quarter + '-' + index + '-' + step.label, quarter, label: step.label, on: stepOn, off: stepOff, currentOn:[...currentOn], currentBench:[...currentBench] });
         });
       });
       return timeline;
     }
 
     function groupPlayersByRole(players) {
-      return { backs: players.filter((n) => PLAYER_ROLES[n] === 'back'), mids: players.filter((n) => PLAYER_ROLES[n] === 'mid'), forwards: players.filter((n) => PLAYER_ROLES[n] === 'forward'), others: players.filter((n) => !(n in PLAYER_ROLES)) };
+      return {
+        backs: players.filter((n) => PLAYER_ROLES[n] === 'back'),
+        mids: players.filter((n) => PLAYER_ROLES[n] === 'mid'),
+        forwards: players.filter((n) => PLAYER_ROLES[n] === 'forward'),
+        others: players.filter((n) => !(n in PLAYER_ROLES))
+      };
     }
 
     function quarterFromStep(step) { return step.quarter === 'START' ? 'Q1' : step.quarter; }
@@ -452,32 +467,26 @@ Ruck: Ben M, Ted, Archer (M)`;
       [...currentOn, ...currentBench].forEach((player) => {
         benchMeta[player] = { lastBenchStep: currentBench.includes(player) ? 0 : null };
       });
-
       for (let i = 1; i <= currentIndex; i += 1) {
         const planned = baseTimeline[i];
         const action = actionMap[i] || { type: 'complete' };
         const offPlayers = action.type === 'override' ? action.off : action.type === 'complete' ? planned.off : [];
         const onPlayers = action.type === 'override' ? action.on : action.type === 'complete' ? planned.on : [];
-
         offPlayers.forEach((player) => {
           currentOn = currentOn.filter((name) => name !== player);
           if (!currentBench.includes(player)) currentBench.push(player);
           if (!benchMeta[player]) benchMeta[player] = {};
           benchMeta[player].lastBenchStep = i;
         });
-
         onPlayers.forEach((player) => {
           currentBench = currentBench.filter((name) => name !== player);
           if (!currentOn.includes(player)) currentOn.push(player);
         });
       }
-
       return { currentOn, currentBench, benchMeta };
     }
 
-    function getActionForIndex(index) {
-      return state.actionMap[index] || { type: 'complete' };
-    }
+    function getActionForIndex(index) { return state.actionMap[index] || { type: 'complete' }; }
 
     function getDisplayedCurrentStep(baseTimeline, currentIndex) {
       if (currentIndex === 0) return { quarter: 'START', label: 'Start', off: [], on: [] };
@@ -498,7 +507,10 @@ Ruck: Ben M, Ted, Archer (M)`;
 
     function renderPills(container, players, kind, metaLookup) {
       container.innerHTML = '';
-      if (!players || players.length === 0) { container.innerHTML = '<div class="empty">—</div>'; return; }
+      if (!players || players.length === 0) {
+        container.innerHTML = '<div class="empty">—</div>';
+        return;
+      }
       players.forEach((player) => {
         const div = document.createElement('div');
         div.className = 'pill ' + (kind || 'team');
@@ -509,10 +521,26 @@ Ruck: Ben M, Ted, Archer (M)`;
 
     function renderTags(container, off, on, skipped) {
       container.innerHTML = '';
-      if (skipped) { container.innerHTML = '<span class="tag skip">Skipped</span>'; return; }
-      if ((!off || !off.length) && (!on || !on.length)) { container.innerHTML = '<span class="tag next">—</span>'; return; }
-      off.forEach((p) => { const s = document.createElement('span'); s.className = 'tag off'; s.textContent = 'Off: ' + p; container.appendChild(s); });
-      on.forEach((p) => { const s = document.createElement('span'); s.className = 'tag on'; s.textContent = 'On: ' + p; container.appendChild(s); });
+      if (skipped) {
+        container.innerHTML = '<span class="tag skip">Skipped</span>';
+        return;
+      }
+      if ((!off || !off.length) && (!on || !on.length)) {
+        container.innerHTML = '<span class="tag next">—</span>';
+        return;
+      }
+      off.forEach((p) => {
+        const s = document.createElement('span');
+        s.className = 'tag off';
+        s.textContent = 'Off: ' + p;
+        container.appendChild(s);
+      });
+      on.forEach((p) => {
+        const s = document.createElement('span');
+        s.className = 'tag on';
+        s.textContent = 'On: ' + p;
+        container.appendChild(s);
+      });
     }
 
     function buildStepCard(step, timelineIndex, isActive) {
@@ -528,13 +556,16 @@ Ruck: Ben M, Ted, Archer (M)`;
     }
 
     function renderModeTabs() {
-      const modes = [{key:'live',label:'Live'},{key:'team',label:'Team'},{key:'import',label:'Import'}];
+      const modes = [{ key:'live', label:'Live' }, { key:'team', label:'Team' }, { key:'import', label:'Import' }];
       els.modeTabs.innerHTML = '';
       modes.forEach((mode) => {
         const btn = document.createElement('button');
         btn.className = 'mode-tab' + (state.activeMode === mode.key ? ' active' : '');
         btn.textContent = mode.label;
-        btn.addEventListener('click', () => { state.activeMode = mode.key; render(); });
+        btn.addEventListener('click', () => {
+          state.activeMode = mode.key;
+          render();
+        });
         els.modeTabs.appendChild(btn);
       });
     }
@@ -575,20 +606,24 @@ Ruck: Ben M, Ted, Archer (M)`;
     function renderOverrideOptions(currentOn, currentBench) {
       els.overrideOffGrid.innerHTML = '';
       els.overrideOnGrid.innerHTML = '';
-
       currentOn.forEach((player) => {
         const btn = document.createElement('button');
         btn.className = 'select-btn' + (state.overrideOffPlayer === player ? ' active' : '');
         btn.textContent = player;
-        btn.addEventListener('click', () => { state.overrideOffPlayer = player; render(); });
+        btn.addEventListener('click', () => {
+          state.overrideOffPlayer = player;
+          render();
+        });
         els.overrideOffGrid.appendChild(btn);
       });
-
       currentBench.forEach((player) => {
         const btn = document.createElement('button');
         btn.className = 'select-btn' + (state.overrideOnPlayer === player ? ' active' : '');
         btn.textContent = player;
-        btn.addEventListener('click', () => { state.overrideOnPlayer = player; render(); });
+        btn.addEventListener('click', () => {
+          state.overrideOnPlayer = player;
+          render();
+        });
         els.overrideOnGrid.appendChild(btn);
       });
     }
@@ -598,13 +633,7 @@ Ruck: Ben M, Ted, Archer (M)`;
       const baseTimeline = buildTimeline(parsed);
       const nextIndex = state.activeIndex + 1;
       if (nextIndex >= baseTimeline.length) return;
-
-      if (type === 'complete') {
-        state.actionMap[nextIndex] = { type: 'complete' };
-      } else if (type === 'skip') {
-        state.actionMap[nextIndex] = { type: 'skip' };
-      }
-
+      state.actionMap[nextIndex] = { type: type === 'skip' ? 'skip' : 'complete' };
       state.activeIndex = nextIndex;
       state.activeQuarter = quarterFromStep(baseTimeline[nextIndex]);
       state.showOverride = false;
@@ -619,12 +648,7 @@ Ruck: Ben M, Ted, Archer (M)`;
       const nextIndex = state.activeIndex + 1;
       if (nextIndex >= baseTimeline.length) return;
       if (!state.overrideOffPlayer || !state.overrideOnPlayer) return;
-
-      state.actionMap[nextIndex] = {
-        type: 'override',
-        off: [state.overrideOffPlayer],
-        on: [state.overrideOnPlayer]
-      };
+      state.actionMap[nextIndex] = { type: 'override', off: [state.overrideOffPlayer], on: [state.overrideOnPlayer] };
       state.activeIndex = nextIndex;
       state.activeQuarter = quarterFromStep(baseTimeline[nextIndex]);
       state.showOverride = false;
@@ -646,7 +670,6 @@ Ruck: Ben M, Ted, Archer (M)`;
 
       els.heroEyebrow.textContent = state.teamName || 'Rotations';
       els.heroHeadline.textContent = currentDisplay.quarter === 'START' ? 'Game Start' : currentDisplay.quarter + ' · ' + currentDisplay.label;
-
       renderModeTabs();
       renderQuarterTabs(baseTimeline);
 
@@ -699,20 +722,21 @@ Ruck: Ben M, Ted, Archer (M)`;
       els.nextBtn.disabled = state.activeIndex >= baseTimeline.length - 1;
       els.skipBtn.disabled = state.activeIndex >= baseTimeline.length - 1;
       els.overrideBtn.disabled = state.activeIndex >= baseTimeline.length - 1;
-
       els.overrideCard.classList.toggle('hidden', !state.showOverride);
       if (state.showOverride) renderOverrideOptions(liveState.currentOn, liveState.currentBench);
       els.applyOverrideBtn.disabled = !(state.overrideOffPlayer && state.overrideOnPlayer);
-
       saveState();
     }
 
     loadState();
-
     els.teamName.value = state.teamName;
     els.rotationInput.value = state.rawText;
 
-    els.teamName.addEventListener('input', (e) => { state.teamName = e.target.value; render(); });
+    els.teamName.addEventListener('input', (e) => {
+      state.teamName = e.target.value;
+      render();
+    });
+
     els.rotationInput.addEventListener('input', (e) => {
       state.rawText = e.target.value;
       state.activeIndex = 0;
@@ -723,30 +747,53 @@ Ruck: Ben M, Ted, Archer (M)`;
       state.overrideOnPlayer = null;
       render();
     });
-    els.prevBtn.addEventListener('click', () => { if (state.activeIndex > 0) jumpToIndex(state.activeIndex - 1); });
-    els.nextBtn.addEventListener('click', () => { applyNextAction('complete'); });
-    els.skipBtn.addEventListener('click', () => { applyNextAction('skip'); });
+
+    els.prevBtn.addEventListener('click', () => {
+      if (state.activeIndex > 0) jumpToIndex(state.activeIndex - 1);
+    });
+
+    els.nextBtn.addEventListener('click', () => {
+      applyNextAction('complete');
+    });
+
+    els.skipBtn.addEventListener('click', () => {
+      applyNextAction('skip');
+    });
+
     els.overrideBtn.addEventListener('click', () => {
       state.showOverride = !state.showOverride;
       state.overrideOffPlayer = null;
       state.overrideOnPlayer = null;
       render();
     });
-    els.applyOverrideBtn.addEventListener('click', () => { applyOverride(); });
+
+    els.applyOverrideBtn.addEventListener('click', () => {
+      applyOverride();
+    });
+
     els.cancelOverrideBtn.addEventListener('click', () => {
       state.showOverride = false;
       state.overrideOffPlayer = null;
       state.overrideOnPlayer = null;
       render();
     });
+
     els.resetBtn.addEventListener('click', () => {
-      Object.assign(state, {
-        ...defaultState,
-        rawText: state.rawText
-      });
+      Object.assign(state, { ...defaultState });
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (error) {
+        console.warn('Unable to clear saved state', error);
+      }
+      els.teamName.value = state.teamName;
+      els.rotationInput.value = state.rawText;
       render();
     });
-    els.toggleListBtn.addEventListener('click', () => { state.showList = !state.showList; render(); });
+
+    els.toggleListBtn.addEventListener('click', () => {
+      state.showList = !state.showList;
+      render();
+    });
 
     render();
   </script>
