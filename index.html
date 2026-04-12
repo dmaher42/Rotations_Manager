@@ -34,27 +34,33 @@
     .hero { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:16px; background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%); }
     .eyebrow { font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.12em; }
     .headline { margin-top:6px; font-size:30px; font-weight:800; line-height:1; color:var(--navy); }
-    .actions, .tabs, .mode-tabs { display:grid; gap:8px; }
+    .actions, .tabs, .mode-tabs, .live-actions { display:grid; gap:8px; }
     .actions { grid-auto-flow:column; grid-auto-columns:1fr; }
-    .tabs { grid-template-columns:repeat(4,1fr); }
+    .tabs { grid-template-columns:repeat(4,1ir); }
     .mode-tabs { grid-template-columns:repeat(3,1fr); }
+    .live-actions { grid-template-columns:repeat(2,1fr); }
     button, input, textarea { font:inherit; }
-    .btn, .tab, .mode-tab, .toggle-btn { border:1px solid var(--border); background:#fff; color:var(--text); border-radius:14px; padding:11px 12px; font-weight:700; cursor:pointer; }
+    .btn, .tab, .mode-tab, .toggle-btn, .secondary-btn, .select-btn {
+      border:1px solid var(--border); background:#fff; color:var(--text); border-radius:14px; padding:11px 12px; font-weight:700; cursor:pointer;
+    }
     .btn.primary, .tab.active, .mode-tab.active { background:var(--navy); color:#fff; border-color:var(--navy); }
+    .secondary-btn { background:var(--slate-soft); }
+    .secondary-btn.warn { background:var(--blue-soft); color:var(--blue); border-color:#bfdbfe; }
     .toggle-btn { width:100%; background:var(--slate-soft); }
-    .toggle-btn.active { background:var(--navy-soft); border-color:#bfd3ef; color:var(--navy); }
-    .btn:disabled { opacity:.45; cursor:default; }
+    .toggle-btn.active, .select-btn.active { background:var(--navy-soft); border-color:#bfd3ef; color:var(--navy); }
+    .btn:disabled, .secondary-btn:disabled { opacity:.45; cursor:default; }
     .input, .textarea { width:100%; border:1px solid var(--border); border-radius:14px; padding:12px 14px; background:#fff; color:var(--text); }
     .textarea { min-height:320px; resize:vertical; font-family:monospace; font-size:13px; line-height:1.45; }
     .live-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
     .status-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
     .team-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
     .pill-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:8px; }
-    .pill { border:1px solid var(--border); background:#fff; border-radius:12px; padding:10px 11px; font-size:14px; font-weight:600; min-height:42px; display:flex; align-items:center; }
+    .pill { border:1px solid var(--border); background:#fff; border-radius:12px; padding:10px 11px; font-size:14px; font-weight:600; min-height:42px; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:4px; }
     .pill.off { background:var(--red-soft); border-color:#f5c2bd; color:var(--red); }
     .pill.on { background:var(--green-soft); border-color:#bfe7cb; color:var(--green); }
     .pill.bench { background:var(--amber-soft); border-color:#f2d19a; color:var(--amber); }
     .pill.team { background:#fff; }
+    .pill small { font-size:11px; font-weight:700; opacity:.9; }
     .empty { border:1px dashed var(--border); border-radius:12px; padding:16px; color:#94a3b8; font-size:14px; text-align:center; background:var(--slate-soft); }
     .mini-title { margin:0 0 10px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); }
     .flow { display:flex; flex-direction:column; gap:10px; max-height:360px; overflow:auto; }
@@ -68,12 +74,14 @@
     .tag.off { background:var(--red-soft); color:var(--red); border-color:#f5c2bd; }
     .tag.on { background:var(--green-soft); color:var(--green); border-color:#bfe7cb; }
     .tag.next { background:var(--blue-soft); color:var(--blue); border-color:#bfdbfe; }
+    .tag.skip { background:var(--slate-soft); color:var(--muted); border-color:var(--border); }
     .flow-step.active .tag { background:#fff; color:var(--navy); border-color:#fff; }
     .hidden { display:none !important; }
     .panel-now { background:var(--navy-soft); border-top:5px solid var(--navy); }
     .panel-next { background:var(--blue-soft); border-top:5px solid var(--blue); }
     .panel-bench { background:var(--amber-soft); border-top:5px solid var(--amber); }
     .panel-list { background:#fff; }
+    .panel-override { background:#fff; border-top:5px solid var(--blue); }
     .step-card { display:flex; flex-direction:column; gap:8px; }
     .step-big { font-size:28px; font-weight:800; line-height:1; color:var(--navy); }
     .step-sub { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); }
@@ -83,23 +91,26 @@
     .dot.now { background:var(--navy); }
     .dot.next { background:var(--blue); }
     .dot.bench { background:var(--amber); }
+    .dot.override { background:var(--blue); }
     .mobile-only { display:none; }
+    .override-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .selection-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:8px; }
+    .helper-text { margin-top:10px; font-size:12px; color:var(--muted); }
     @media (max-width:900px) {
-      .live-grid, .team-grid, .status-grid { grid-template-columns:1fr; }
+      .live-grid, .team-grid, .status-grid, .override-grid { grid-template-columns:1fr; }
     }
     @media (max-width:720px) {
       .app { padding:12px; gap:12px; }
-      .tabs, .mode-tabs, .actions { grid-template-columns:repeat(2,1fr); grid-auto-flow:unset; }
+      .tabs, .mode-tabs, .actions, .live-actions { grid-template-columns:repeat(2,1fr); grid-auto-flow:unset; }
       .hero { flex-direction:column; align-items:flex-start; padding:14px; }
       .headline { font-size:24px; }
       .card-header { padding:14px 14px 0; }
       .card-body { padding:14px; }
       .step-big { font-size:24px; }
-      .pill-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .pill-grid, .selection-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
       .pill { min-height:46px; font-size:15px; padding:11px 12px; }
       .flow-step { padding:12px; }
       .mobile-only { display:block; }
-      .desktop-list-open .panel-list { display:block; }
     }
   </style>
 </head>
@@ -123,6 +134,32 @@
     <div class="tabs" id="quarterTabs"></div>
 
     <section id="liveView" class="hidden">
+      <div class="live-actions">
+        <button id="skipBtn" class="secondary-btn">Skip change</button>
+        <button id="overrideBtn" class="secondary-btn warn">Override</button>
+      </div>
+
+      <section class="card panel-override hidden" id="overrideCard">
+        <div class="card-header"><div class="section-accent"><span class="dot override"></span>Override next change</div></div>
+        <div class="card-body">
+          <div class="override-grid">
+            <div>
+              <p class="mini-title">Choose player off</p>
+              <div id="overrideOffGrid" class="selection-grid"></div>
+            </div>
+            <div>
+              <p class="mini-title">Choose player on</p>
+              <div id="overrideOnGrid" class="selection-grid"></div>
+            </div>
+          </div>
+          <div class="live-actions" style="margin-top:14px;">
+            <button id="applyOverrideBtn" class="btn primary">Apply override</button>
+            <button id="cancelOverrideBtn" class="secondary-btn">Cancel</button>
+          </div>
+          <div class="helper-text">Use this when the planned change cannot happen and you need to swap a different player.</div>
+        </div>
+      </section>
+
       <div class="live-grid">
         <section class="card panel-now">
           <div class="card-header"><div class="section-accent"><span class="dot now"></span>Now</div></div>
@@ -136,7 +173,7 @@
                 <p class="mini-title">Off</p>
                 <div id="offGrid" class="pill-grid"></div>
               </div>
-              <div>
+              <div >
                 <p class="mini-title">On</p>
                 <div id="onGrid" class="pill-grid"></div>
               </div>
@@ -249,11 +286,63 @@ Off: Archer (J), Oskar F, Lachlan (C)
 On: Blake H, Chase, Archer (M)
 
 Ruck: Ben M, Ted, Archer (M)`;
-    const state = { rawText: DEFAULT_TEXT, teamName: 'Rotations', activeIndex: 0, activeQuarter: 'Q1', activeMode: 'live', showList: false };
+
+    const state = {
+      rawText: DEFAULT_TEXT,
+      teamName: 'Rotations',
+      activeIndex: 0,
+      activeQuarter: 'Q1',
+      activeMode: 'live',
+      showList: false,
+      actionMap: {},
+      showOverride: false,
+      overrideOffPlayer: null,
+      overrideOnPlayer: null
+    };
+
     const els = {
-      appRoot: document.getElementById('appRoot'), teamName: document.getElementById('teamName'), rotationInput: document.getElementById('rotationInput'), heroEyebrow: document.getElementById('heroEyebrow'), heroHeadline: document.getElementById('heroHeadline'), prevBtn: document.getElementById('prevBtn'), nextBtn: document.getElementById('nextBtn'), resetBtn: document.getElementById('resetBtn'), modeTabs: document.getElementById('modeTabs'), quarterTabs: document.getElementById('quarterTabs'), liveView: document.getElementById('liveView'), teamView: document.getElementById('teamView'), importView: document.getElementById('importView'), nowQuarter: document.getElementById('nowQuarter'), nowLabel: document.getElementById('nowLabel'), nextQuarter: document.getElementById('nextQuarter'), nextLabel: document.getElementById('nextLabel'), nextTags: document.getElementById('nextTags'), backsGrid: document.getElementById('backsGrid'), midsGrid: document.getElementById('midsGrid'), forwardsGrid: document.getElementById('forwardsGrid'), othersGrid: document.getElementById('othersGrid'), othersCard: document.getElementById('othersCard'), benchGrid: document.getElementById('benchGrid'), offGrid: document.getElementById('offGrid'), onGrid: document.getElementById('onGrid'), flowList: document.getElementById('flowList'), ruckGrid: document.getElementById('ruckGrid'), toggleListBtn: document.getElementById('toggleListBtn'), rotationListCard: document.getElementById('rotationListCard') };
-    function splitNames(text) { return text.split(',').map(n => n.trim()).filter(Boolean); }
+      appRoot: document.getElementById('appRoot'),
+      teamName: document.getElementById('teamName'),
+      rotationInput: document.getElementById('rotationInput'),
+      heroEyebrow: document.getElementById('heroEyebrow'),
+      heroHeadline: document.getElementById('heroHeadline'),
+      prevBtn: document.getElementById('prevBtn'),
+      nextBtn: document.getElementById('nextBtn'),
+      resetBtn: document.getElementById('resetBtn'),
+      skipBtn: document.getElementById('skipBtn'),
+      overrideBtn: document.getElementById('overrideBtn'),
+      overrideCard: document.getElementById('overrideCard'),
+      overrideOffGrid: document.getElementById('overrideOffGrid'),
+      overrideOnGrid: document.getElementById('overrideOnGrid'),
+      applyOverrideBtn: document.getElementById('applyOverrideBtn'),
+      cancelOverrideBtn: document.getElementById('cancelOverrideBtn'),
+      modeTabs: document.getElementById('modeTabs'),
+      quarterTabs: document.getElementById('quarterTabs'),
+      liveView: document.getElementById('liveView'),
+      teamView: document.getElementById('teamView'),
+      importView: document.getElementById('importView'),
+      nowQuarter: document.getElementById('nowQuarter'),
+      nowLabel: document.getElementById('nowLabel'),
+      nextQuarter: document.getElementById('nextQuarter'),
+      nextLabel: document.getElementById('nextLabel'),
+      nextTags: document.getElementById('nextTags'),
+      backsGrid: document.getElementById('backsGrid'),
+      midsGrid: document.getElementById('midsGrid'),
+      forwardsGrid: document.getElementById('forwardsGrid'),
+      othersGrid: document.getElementById('othersGrid'),
+      othersCard: document.getElementById('othersCard'),
+      benchGrid: document.getElementById('benchGrid'),
+      offGrid: document.getElementById('offGrid'),
+      onGrid: document.getElementById('onGrid'),
+      flowList: document.getElementById('flowList'),
+      ruckGrid: document.getElementById('ruckGrid'),
+      toggleListBtn: document.getElementById('toggleListBtn'),
+      rotationListCard: document.getElementById('rotationListCard')
+    };
+
+    function splitNames(text) { return text.split(',').map((n) => n.trim()).filter(Boolean); }
     function cleanLine(line) { return line.replace(/\u00a0/g, ' ').trim(); }
+
     function parseRotationText(input) {
       const lines = input.split(/\r?\n/).map(cleanLine).filter(Boolean);
       const data = { starting18: { backs: [], mids: [], forwards: [] }, bench: [], ruck: [], quarters: { Q1: { startOn: [], steps: [] }, Q2: { startOn: [], steps: [] }, Q3: { startOn: [], steps: [] }, Q4: { startOn: [], steps: [] } } };
@@ -273,6 +362,7 @@ Ruck: Ben M, Ted, Archer (M)`;
       }
       return data;
     }
+
     function buildTimeline(parsed) {
       const initialOn = [...parsed.starting18.backs, ...parsed.starting18.mids, ...parsed.starting18.forwards];
       const initialBench = [...parsed.bench];
@@ -303,27 +393,95 @@ Ruck: Ben M, Ted, Archer (M)`;
       });
       return timeline;
     }
+
     function groupPlayersByRole(players) {
       return { backs: players.filter((n) => PLAYER_ROLES[n] === 'back'), mids: players.filter((n) => PLAYER_ROLES[n] === 'mid'), forwards: players.filter((n) => PLAYER_ROLES[n] === 'forward'), others: players.filter((n) => !(n in PLAYER_ROLES)) };
     }
+
     function quarterFromStep(step) { return step.quarter === 'START' ? 'Q1' : step.quarter; }
-    function renderPills(container, players, kind) {
+
+    function buildLiveState(baseTimeline, currentIndex, actionMap) {
+      let currentOn = [...baseTimeline[0].currentOn];
+      let currentBench = [...baseTimeline[0].currentBench];
+      const benchMeta = {};
+      [...currentOn, ...currentBench].forEach((player) => {
+        benchMeta[player] = { lastBenchStep: currentBench.includes(player) ? 0 : null };
+      });
+
+      for (let i = 1; i <= currentIndex; i += 1) {
+        const planned = baseTimeline[i];
+        const action = actionMap[i] || { type: 'complete' };
+        const offPlayers = action.type === 'override' ? action.off : action.type === 'complete' ? planned.off : [];
+        const onPlayers = action.type === 'override' ? action.on : action.type === 'complete' ? planned.on : [];
+
+        offPlayers.forEach((player) => {
+          currentOn = currentOn.filter((name) => name !== player);
+          if (!currentBench.includes(player)) currentBench.push(player);
+          if (!benchMeta[player]) benchMeta[player] = {};
+          benchMeta[player].lastBenchStep = i;
+        });
+
+        onPlayers.forEach((player) => {
+          currentBench = currentBench.filter((name) => name !== player);
+          if (!currentOn.includes(player)) currentOn.push(player);
+        });
+      }
+
+      return { currentOn, currentBench, benchMeta };
+    }
+
+    function getActionForIndex(index) {
+      return state.actionMap[index] || { type: 'complete' };
+    }
+
+    function getDisplayedCurrentStep(baseTimeline, currentIndex) {
+      if (currentIndex === 0) return { quarter: 'START', label: 'Start', off: [], on: [] };
+      const planned = baseTimeline[currentIndex];
+      const action = getActionForIndex(currentIndex);
+      if (action.type === 'skip') return { quarter: planned.quarter, label: planned.label + ' skipped', off: [], on: [] };
+      if (action.type === 'override') return { quarter: planned.quarter, label: planned.label + ' override', off: action.off, on: action.on };
+      return { quarter: planned.quarter, label: planned.label, off: planned.off, on: planned.on };
+    }
+
+    function getBenchStatus(player, benchMeta, currentIndex) {
+      const meta = benchMeta[player] || {};
+      if (meta.lastBenchStep === currentIndex && currentIndex > 0) return 'just off';
+      if (meta.lastBenchStep == null) return 'ready';
+      if (currentIndex - meta.lastBenchStep >= 2) return 'waiting';
+      return 'ready';
+    }
+
+    function renderPills(container, players, kind, metaLookup) {
       container.innerHTML = '';
       if (!players || players.length === 0) { container.innerHTML = '<div class="empty">—</div>'; return; }
-      players.forEach((player) => { const div = document.createElement('div'); div.className = 'pill ' + (kind || 'team'); div.textContent = player; container.appendChild(div); });
+      players.forEach((player) => {
+        const div = document.createElement('div');
+        div.className = 'pill ' + (kind || 'team');
+        div.innerHTML = metaLookup ? '<span>' + player + '</span><small>' + metaLookup(player) + '</small>' : '<span>' + player + '</span>';
+        container.appendChild(div);
+      });
     }
-    function renderTags(container, off, on) {
+
+    function renderTags(container, off, on, skipped) {
       container.innerHTML = '';
+      if (skipped) { container.innerHTML = '<span class="tag skip">Skipped</span>'; return; }
       if ((!off || !off.length) && (!on || !on.length)) { container.innerHTML = '<span class="tag next">—</span>'; return; }
       off.forEach((p) => { const s = document.createElement('span'); s.className = 'tag off'; s.textContent = 'Off: ' + p; container.appendChild(s); });
       on.forEach((p) => { const s = document.createElement('span'); s.className = 'tag on'; s.textContent = 'On: ' + p; container.appendChild(s); });
     }
+
     function buildStepCard(step, timelineIndex, isActive) {
-      const btn = document.createElement('button'); btn.className = 'flow-step' + (isActive ? ' active' : '');
-      btn.addEventListener('click', () => { state.activeIndex = timelineIndex; state.activeQuarter = quarterFromStep(step); render(); });
-      btn.innerHTML = '<div class="flow-top-row"><div><div class="flow-quarter">' + (step.quarter === 'START' ? 'Game' : step.quarter) + '</div><div class="flow-label">' + step.label + '</div></div><div style="font-size:18px;font-weight:800;">' + (isActive ? '●' : '') + '</div></div><div class="tag-wrap">' + (step.off.length ? step.off.map((p) => '<span class="tag off">Off: ' + p + '</span>').join('') : '') + (step.on.length ? step.on.map((p) => '<span class="tag on">On: ' + p + '</span>').join('') : '') + '</div>';
+      const btn = document.createElement('button');
+      btn.className = 'flow-step' + (isActive ? ' active' : '');
+      btn.addEventListener('click', () => { jumpToIndex(timelineIndex); });
+      const action = getActionForIndex(timelineIndex);
+      const off = action.type === 'override' ? action.off : action.type === 'complete' ? step.off : [];
+      const on = action.type === 'override' ? action.on : action.type === 'complete' ? step.on : [];
+      const statusTag = action.type === 'skip' ? '<span class="tag skip">Skipped</span>' : '';
+      btn.innerHTML = '<div class="flow-top-row"><div><div class="flow-quarter">' + (step.quarter === 'START' ? 'Game' : step.quarter) + '</div><div class="flow-label">' + step.label + '</div></div><div style="font-size:18px;font-weight:800;">' + (isActive ? '●' : '') + '</div></div><div class="tag-wrap">' + statusTag + (off.length ? off.map((p) => '<span class="tag off">Off: ' + p + '</span>').join('') : '') + (on.length ? on.map((p) => '<span class="tag on">On: ' + p + '</span>').join('') : '') + '</div>';
       return btn;
     }
+
     function renderModeTabs() {
       const modes = [{key:'live',label:'Live'},{key:'team',label:'Team'},{key:'import',label:'Import'}];
       els.modeTabs.innerHTML = '';
@@ -333,40 +491,207 @@ Ruck: Ben M, Ted, Archer (M)`;
         els.modeTabs.appendChild(btn);
       });
     }
-    function renderQuarterTabs() {
+
+    function renderQuarterTabs(baseTimeline) {
       const quarters = ['Q1','Q2','Q3','Q4']; els.quarterTabs.innerHTML = '';
       quarters.forEach((quarter) => {
         const btn = document.createElement('button'); btn.className = 'tab' + (state.activeQuarter === quarter ? ' active' : ''); btn.textContent = quarter;
         btn.addEventListener('click', () => {
           state.activeQuarter = quarter;
-          const parsed = parseRotationText(state.rawText); const timeline = buildTimeline(parsed);
-          const firstIndex = timeline.findIndex((step) => step.quarter === quarter || (quarter === 'Q1' && step.quarter === 'START')); state.activeIndex = firstIndex >= 0 ? firstIndex : 0; render();
+          const firstIndex = baseTimeline.findIndex((step, index) => index > 0 && step.quarter === quarter);
+          jumpToIndex(firstIndex > 0 ? firstIndex - 1 : 0, false);
         });
         els.quarterTabs.appendChild(btn);
       });
     }
+
+    function jumpToIndex(targetIndex, autoQuarter = true) {
+      const parsed = parseRotationText(state.rawText);
+      const baseTimeline = buildTimeline(parsed);
+      targetIndex = Math.max(0, Math.min(targetIndex, baseTimeline.length - 1));
+      if (targetIndex > state.activeIndex) {
+        for (let i = state.activeIndex + 1; i <= targetIndex; i += 1) {
+          if (!state.actionMap[i]) state.actionMap[i] = { type: 'complete' };
+        }
+      }
+      state.activeIndex = targetIndex;
+      if (autoQuarter) state.activeQuarter = quarterFromStep(baseTimeline[targetIndex]);
+      state.showOverride = false;
+      state.overrideOffPlayer = null;
+      state.overrideOnPlayer = null;
+      render();
+    }
+
+    function renderOverrideOptions(currentOn, currentBench) {
+      els.overrideOffGrid.innerHTML = '';
+      els.overrideOnGrid.innerHTML = '';
+
+      currentOn.forEach((player) => {
+        const btn = document.createElement('button');
+        btn.className = 'select-btn' + (state.overrideOffPlayer === player ? ' active' : '');
+        btn.textContent = player;
+        btn.addEventListener('click', () => { state.overrideOffPlayer = player; render(); });
+        els.overrideOffGrid.appendChild(btn);
+      });
+
+      currentBench.forEach((player) => {
+        const btn = document.createElement('button');
+        btn.className = 'select-btn' + (state.overrideOnPlayer === player ? ' active' : '');
+        btn.textContent = player;
+        btn.addEventListener('click', () => { state.overrideOnPlayer = player; render(); });
+        els.overrideOnGrid.appendChild(btn);
+      });
+    }
+
+    function applyNextAction(type) {
+      const parsed = parseRotationText(state.rawText);
+      const baseTimeline = buildTimeline(parsed);
+      const nextIndex = state.activeIndex + 1;
+      if (nextIndex >= baseTimeline.length) return;
+
+      if (type === 'complete') {
+        state.actionMap[nextIndex] = { type: 'complete' };
+      } else if (type === 'skip') {
+        state.actionMap[nextIndex] = { type: 'skip' };
+      }
+
+      state.activeIndex = nextIndex;
+      state.activeQuarter = quarterFromStep(baseTimeline[nextIndex]);
+      state.showOverride = false;
+      state.overrideOffPlayer = null;
+      state.overrideOnPlayer = null;
+      render();
+    }
+
+    function applyOverride() {
+      const parsed = parseRotationText(state.rawText);
+      const baseTimeline = buildTimeline(parsed);
+      const nextIndex = state.activeIndex + 1;
+      if (nextIndex >= baseTimeline.length) return;
+      if (!state.overrideOffPlayer || !state.overrideOnPlayer) return;
+
+      state.actionMap[nextIndex] = {
+        type: 'override',
+        off: [state.overrideOffPlayer],
+        on: [state.overrideOnPlayer]
+      };
+      state.activeIndex = nextIndex;
+      state.activeQuarter = quarterFromStep(baseTimeline[nextIndex]);
+      state.showOverride = false;
+      state.overrideOffPlayer = null;
+      state.overrideOnPlayer = null;
+      render();
+    }
+
     function render() {
-      const parsed = parseRotationText(state.rawText); const timeline = buildTimeline(parsed); const activeStep = timeline[state.activeIndex] || timeline[0]; const nextStep = timeline[state.activeIndex + 1] || null; const grouped = groupPlayersByRole(activeStep.currentOn); const visibleSteps = timeline.filter((step) => step.quarter === state.activeQuarter || (state.activeQuarter === 'Q1' && step.quarter === 'START'));
-      els.heroEyebrow.textContent = state.teamName || 'Rotations'; els.heroHeadline.textContent = activeStep.quarter === 'START' ? 'Game Start' : activeStep.quarter + ' · ' + activeStep.label;
-      renderModeTabs(); renderQuarterTabs();
-      els.liveView.classList.toggle('hidden', state.activeMode !== 'live'); els.teamView.classList.toggle('hidden', state.activeMode !== 'team'); els.importView.classList.toggle('hidden', state.activeMode !== 'import');
-      els.nowQuarter.textContent = activeStep.quarter === 'START' ? 'GAME' : activeStep.quarter; els.nowLabel.textContent = activeStep.label; renderPills(els.offGrid, activeStep.off, 'off'); renderPills(els.onGrid, activeStep.on, 'on'); renderPills(els.benchGrid, activeStep.currentBench, 'bench');
-      if (nextStep) { els.nextQuarter.textContent = nextStep.quarter === 'START' ? 'GAME' : nextStep.quarter; els.nextLabel.textContent = nextStep.label; renderTags(els.nextTags, nextStep.off, nextStep.on); } else { els.nextQuarter.textContent = 'END'; els.nextLabel.textContent = 'No next step'; els.nextTags.innerHTML = '<span class="tag next">—</span>'; }
+      const parsed = parseRotationText(state.rawText);
+      const baseTimeline = buildTimeline(parsed);
+      const liveState = buildLiveState(baseTimeline, state.activeIndex, state.actionMap);
+      const currentDisplay = getDisplayedCurrentStep(baseTimeline, state.activeIndex);
+      const nextStep = baseTimeline[state.activeIndex + 1] || null;
+      const nextAction = nextStep ? getActionForIndex(state.activeIndex + 1) : null;
+      const grouped = groupPlayersByRole(liveState.currentOn);
+      const visibleSteps = baseTimeline.filter((step) => step.quarter === state.activeQuarter || (state.activeQuarter === 'Q1' && step.quarter === 'START'));
+
+      els.heroEyebrow.textContent = state.teamName || 'Rotations';
+      els.heroHeadline.textContent = currentDisplay.quarter === 'START' ? 'Game Start' : currentDisplay.quarter + ' · ' + currentDisplay.label;
+
+      renderModeTabs();
+      renderQuarterTabs(baseTimeline);
+
+      els.liveView.classList.toggle('hidden', state.activeMode !== 'live');
+      els.teamView.classList.toggle('hidden', state.activeMode !== 'team');
+      els.importView.classList.toggle('hidden', state.activeMode !== 'import');
+
+      els.nowQuarter.textContent = currentDisplay.quarter === 'START' ? 'GAME' : currentDisplay.quarter;
+      els.nowLabel.textContent = currentDisplay.label;
+      renderPills(els.offGrid, currentDisplay.off, 'off');
+      renderPills(els.onGrid, currentDisplay.on, 'on');
+      renderPills(els.benchGrid, liveState.currentBench, 'bench', (player) => getBenchStatus(player, liveState.benchMeta, state.activeIndex));
+
+      if (nextStep) {
+        els.nextQuarter.textContent = nextStep.quarter === 'START' ? 'GAME' : nextStep.quarter;
+        els.nextLabel.textContent = nextStep.label;
+        if (nextAction && nextAction.type === 'override') {
+          renderTags(els.nextTags, nextAction.off, nextAction.on, false);
+        } else {
+          renderTags(els.nextTags, nextStep.off, nextStep.on, nextAction && nextAction.type === 'skip');
+        }
+      } else {
+        els.nextQuarter.textContent = 'END';
+        els.nextLabel.textContent = 'No next step';
+        els.nextTags.innerHTML = '<span class="tag next">—</span>';
+      }
+
       els.rotationListCard.classList.toggle('hidden', !state.showList);
       els.toggleListBtn.textContent = state.showList ? 'Hide rotation list' : 'Show rotation list';
       els.toggleListBtn.classList.toggle('active', state.showList);
-      els.flowList.innerHTML = ''; visibleSteps.forEach((step) => { const index = timeline.findIndex((entry) => entry.id === step.id); els.flowList.appendChild(buildStepCard(step, index, index === state.activeIndex)); });
-      renderPills(els.backsGrid, grouped.backs, 'team'); renderPills(els.midsGrid, grouped.mids, 'team'); renderPills(els.forwardsGrid, grouped.forwards, 'team'); renderPills(els.ruckGrid, parsed.ruck, 'team');
+
+      els.flowList.innerHTML = '';
+      visibleSteps.forEach((step) => {
+        const index = baseTimeline.findIndex((entry) => entry.id === step.id);
+        els.flowList.appendChild(buildStepCard(step, index, index === state.activeIndex));
+      });
+
+      renderPills(els.backsGrid, grouped.backs, 'team');
+      renderPills(els.midsGrid, grouped.mids, 'team');
+      renderPills(els.forwardsGrid, grouped.forwards, 'team');
+      renderPills(els.ruckGrid, parsed.ruck, 'team');
       if (grouped.others.length) { els.othersCard.classList.remove('hidden'); renderPills(els.othersGrid, grouped.others, 'team'); } else { els.othersCard.classList.add('hidden'); }
-      els.prevBtn.disabled = state.activeIndex <= 0; els.nextBtn.disabled = state.activeIndex >= timeline.length - 1;
+
+      els.prevBtn.disabled = state.activeIndex <= 0;
+      els.nextBtn.disabled = state.activeIndex >= baseTimeline.length - 1;
+      els.skipBtn.disabled = state.activeIndex >= baseTimeline.length - 1;
+      els.overrideBtn.disabled = state.activeIndex >= baseTimeline.length - 1;
+
+      els.overrideCard.classList.toggle('hidden', !state.showOverride);
+      if (state.showOverride) renderOverrideOptions(liveState.currentOn, liveState.currentBench);
+      els.applyOverrideBtn.disabled = !(state.overrideOffPlayer && state.overrideOnPlayer);
     }
-    els.teamName.value = state.teamName; els.rotationInput.value = state.rawText;
+
+    els.teamName.value = state.teamName;
+    els.rotationInput.value = state.rawText;
+
     els.teamName.addEventListener('input', (e) => { state.teamName = e.target.value; render(); });
-    els.rotationInput.addEventListener('input', (e) => { state.rawText = e.target.value; state.activeIndex = 0; state.activeQuarter = 'Q1'; render(); });
-    els.prevBtn.addEventListener('click', () => { if (state.activeIndex > 0) { state.activeIndex -= 1; const parsed = parseRotationText(state.rawText); const timeline = buildTimeline(parsed); state.activeQuarter = quarterFromStep(timeline[state.activeIndex]); render(); } });
-    els.nextBtn.addEventListener('click', () => { const parsed = parseRotationText(state.rawText); const timeline = buildTimeline(parsed); if (state.activeIndex < timeline.length - 1) { state.activeIndex += 1; state.activeQuarter = quarterFromStep(timeline[state.activeIndex]); render(); } });
-    els.resetBtn.addEventListener('click', () => { state.activeIndex = 0; state.activeQuarter = 'Q1'; state.activeMode = 'live'; state.showList = false; render(); });
+    els.rotationInput.addEventListener('input', (e) => {
+      state.rawText = e.target.value;
+      state.activeIndex = 0;
+      state.activeQuarter = 'Q1';
+      state.actionMap = {};
+      state.showOverride = false;
+      state.overrideOffPlayer = null;
+      state.overrideOnPlayer = null;
+      render();
+    });
+    els.prevBtn.addEventListener('click', () => { if (state.activeIndex > 0) jumpToIndex(state.activeIndex - 1); });
+    els.nextBtn.addEventListener('click', () => { applyNextAction('complete'); });
+    els.skipBtn.addEventListener('click', () => { applyNextAction('skip'); });
+    els.overrideBtn.addEventListener('click', () => {
+      state.showOverride = !state.showOverride;
+      state.overrideOffPlayer = null;
+      state.overrideOnPlayer = null;
+      render();
+    });
+    els.applyOverrideBtn.addEventListener('click', () => { applyOverride(); });
+    els.cancelOverrideBtn.addEventListener('click', () => {
+      state.showOverride = false;
+      state.overrideOffPlayer = null;
+      state.overrideOnPlayer = null;
+      render();
+    });
+    els.resetBtn.addEventListener('click', () => {
+      state.activeIndex = 0;
+      state.activeQuarter = 'Q1';
+      state.activeMode = 'live';
+      state.showList = false;
+      state.actionMap = {};
+      state.showOverride = false;
+      state.overrideOffPlayer = null;
+      state.overrideOnPlayer = null;
+      render();
+    });
     els.toggleListBtn.addEventListener('click', () => { state.showList = !state.showList; render(); });
+
     render();
   </script>
 </body>
