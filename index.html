@@ -36,7 +36,7 @@
     .headline { margin-top:6px; font-size:30px; font-weight:800; line-height:1; color:var(--navy); }
     .actions, .tabs, .mode-tabs, .live-actions { display:grid; gap:8px; }
     .actions { grid-auto-flow:column; grid-auto-columns:1fr; }
-    .tabs { grid-template-columns:repeat(4,1ir); }
+    .tabs { grid-template-columns:repeat(4,1fr); }
     .mode-tabs { grid-template-columns:repeat(3,1fr); }
     .live-actions { grid-template-columns:repeat(2,1fr); }
     button, input, textarea { font:inherit; }
@@ -230,9 +230,12 @@
   </div>
 
   <script>
+    const STORAGE_KEY = 'rotationsManagerState';
+
     const PLAYER_ROLES = {
       'Patty B': 'back', 'Archer (J)': 'mid', 'Henry M': 'back', 'Henry S': 'back', Charlie: 'back', Lucas: 'back', Denzel: 'back', Sol: 'back', 'Blake H': 'mid', Toby: 'mid', Levi: 'back', Mayer: 'mid', Mitch: 'mid', 'Ben M': 'mid', Ted: 'mid', 'Archer (M)': 'mid', Brodie: 'forward', 'Archer (F)': 'forward', Chase: 'forward', 'Blake F': 'forward', 'Oskar F': 'forward', 'Lachlan (C)': 'forward', 'Lachie G': 'forward', Mason: 'forward', 'Ben P': 'forward'
     };
+
     const DEFAULT_TEXT = `Rotation plan for this week
 
 Starting 18
@@ -287,7 +290,7 @@ On: Blake H, Chase, Archer (M)
 
 Ruck: Ben M, Ted, Archer (M)`;
 
-    const state = {
+    const defaultState = {
       rawText: DEFAULT_TEXT,
       teamName: 'Rotations',
       activeIndex: 0,
@@ -299,6 +302,8 @@ Ruck: Ben M, Ted, Archer (M)`;
       overrideOffPlayer: null,
       overrideOnPlayer: null
     };
+
+    const state = { ...defaultState };
 
     const els = {
       appRoot: document.getElementById('appRoot'),
@@ -342,6 +347,46 @@ Ruck: Ben M, Ted, Archer (M)`;
 
     function splitNames(text) { return text.split(',').map((n) => n.trim()).filter(Boolean); }
     function cleanLine(line) { return line.replace(/\u00a0/g, ' ').trim(); }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          rawText: state.rawText,
+          teamName: state.teamName,
+          activeIndex: state.activeIndex,
+          activeQuarter: state.activeQuarter,
+          activeMode: state.activeMode,
+          showList: state.showList,
+          actionMap: state.actionMap,
+          showOverride: state.showOverride,
+          overrideOffPlayer: state.overrideOffPlayer,
+          overrideOnPlayer: state.overrideOnPlayer
+        }));
+      } catch (error) {
+        console.warn('Unable to save state', error);
+      }
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') return;
+        state.rawText = typeof parsed.rawText === 'string' ? parsed.rawText : defaultState.rawText;
+        state.teamName = typeof parsed.teamName === 'string' ? parsed.teamName : defaultState.teamName;
+        state.activeIndex = Number.isInteger(parsed.activeIndex) ? parsed.activeIndex : defaultState.activeIndex;
+        state.activeQuarter = typeof parsed.activeQuarter === 'string' ? parsed.activeQuarter : defaultState.activeQuarter;
+        state.activeMode = typeof parsed.activeMode === 'string' ? parsed.activeMode : defaultState.activeMode;
+        state.showList = typeof parsed.showList === 'boolean' ? parsed.showList : defaultState.showList;
+        state.actionMap = parsed.actionMap && typeof parsed.actionMap === 'object' ? parsed.actionMap : {};
+        state.showOverride = typeof parsed.showOverride === 'boolean' ? parsed.showOverride : false;
+        state.overrideOffPlayer = typeof parsed.overrideOffPlayer === 'string' ? parsed.overrideOffPlayer : null;
+        state.overrideOnPlayer = typeof parsed.overrideOnPlayer === 'string' ? parsed.overrideOnPlayer : null;
+      } catch (error) {
+        console.warn('Unable to load saved state', error);
+      }
+    }
 
     function parseRotationText(input) {
       const lines = input.split(/\r?\n/).map(cleanLine).filter(Boolean);
@@ -388,7 +433,7 @@ Ruck: Ben M, Ted, Archer (M)`;
           const stepOff = step.off.filter(Boolean); const stepOn = step.on.filter(Boolean);
           stepOff.forEach((player) => { currentOn = currentOn.filter((name) => name !== player); if (!currentBench.includes(player)) currentBench.push(player); });
           stepOn.forEach((player) => { currentBench = currentBench.filter((name) => name !== player); if (!currentOn.includes(player)) currentOn.push(player); });
-          timeline.push({ id:quarter + '-' + index + '-' + step.label, quarter, label:step.label, on:stepOn, off:stepOff, currentOn:[...currentOn], currentBench:[...currentBench] });
+          timeline.push({ id:quarter + '-' + index + '-' + step.label, quarter, label:step.label, on:stepOn, off:stepOff, currentOn:[...currentOn], currentBench:[....currentBench] });
         });
       });
       return timeline;
@@ -486,16 +531,21 @@ Ruck: Ben M, Ted, Archer (M)`;
       const modes = [{key:'live',label:'Live'},{key:'team',label:'Team'},{key:'import',label:'Import'}];
       els.modeTabs.innerHTML = '';
       modes.forEach((mode) => {
-        const btn = document.createElement('button'); btn.className = 'mode-tab' + (state.activeMode === mode.key ? ' active' : ''); btn.textContent = mode.label;
+        const btn = document.createElement('button');
+        btn.className = 'mode-tab' + (state.activeMode === mode.key ? ' active' : '');
+        btn.textContent = mode.label;
         btn.addEventListener('click', () => { state.activeMode = mode.key; render(); });
         els.modeTabs.appendChild(btn);
       });
     }
 
     function renderQuarterTabs(baseTimeline) {
-      const quarters = ['Q1','Q2','Q3','Q4']; els.quarterTabs.innerHTML = '';
+      const quarters = ['Q1','Q2','Q3','Q4'];
+      els.quarterTabs.innerHTML = '';
       quarters.forEach((quarter) => {
-        const btn = document.createElement('button'); btn.className = 'tab' + (state.activeQuarter === quarter ? ' active' : ''); btn.textContent = quarter;
+        const btn = document.createElement('button');
+        btn.className = 'tab' + (state.activeQuarter === quarter ? ' active' : '');
+        btn.textContent = quarter;
         btn.addEventListener('click', () => {
           state.activeQuarter = quarter;
           const firstIndex = baseTimeline.findIndex((step, index) => index > 0 && step.quarter === quarter);
@@ -586,6 +636,7 @@ Ruck: Ben M, Ted, Archer (M)`;
     function render() {
       const parsed = parseRotationText(state.rawText);
       const baseTimeline = buildTimeline(parsed);
+      state.activeIndex = Math.max(0, Math.min(state.activeIndex, baseTimeline.length - 1));
       const liveState = buildLiveState(baseTimeline, state.activeIndex, state.actionMap);
       const currentDisplay = getDisplayedCurrentStep(baseTimeline, state.activeIndex);
       const nextStep = baseTimeline[state.activeIndex + 1] || null;
@@ -637,7 +688,12 @@ Ruck: Ben M, Ted, Archer (M)`;
       renderPills(els.midsGrid, grouped.mids, 'team');
       renderPills(els.forwardsGrid, grouped.forwards, 'team');
       renderPills(els.ruckGrid, parsed.ruck, 'team');
-      if (grouped.others.length) { els.othersCard.classList.remove('hidden'); renderPills(els.othersGrid, grouped.others, 'team'); } else { els.othersCard.classList.add('hidden'); }
+      if (grouped.others.length) {
+        els.othersCard.classList.remove('hidden');
+        renderPills(els.othersGrid, grouped.others, 'team');
+      } else {
+        els.othersCard.classList.add('hidden');
+      }
 
       els.prevBtn.disabled = state.activeIndex <= 0;
       els.nextBtn.disabled = state.activeIndex >= baseTimeline.length - 1;
@@ -647,7 +703,11 @@ Ruck: Ben M, Ted, Archer (M)`;
       els.overrideCard.classList.toggle('hidden', !state.showOverride);
       if (state.showOverride) renderOverrideOptions(liveState.currentOn, liveState.currentBench);
       els.applyOverrideBtn.disabled = !(state.overrideOffPlayer && state.overrideOnPlayer);
+
+      saveState();
     }
+
+    loadState();
 
     els.teamName.value = state.teamName;
     els.rotationInput.value = state.rawText;
@@ -680,14 +740,10 @@ Ruck: Ben M, Ted, Archer (M)`;
       render();
     });
     els.resetBtn.addEventListener('click', () => {
-      state.activeIndex = 0;
-      state.activeQuarter = 'Q1';
-      state.activeMode = 'live';
-      state.showList = false;
-      state.actionMap = {};
-      state.showOverride = false;
-      state.overrideOffPlayer = null;
-      state.overrideOnPlayer = null;
+      Object.assign(state, {
+        ...defaultState,
+        rawText: state.rawText
+      });
       render();
     });
     els.toggleListBtn.addEventListener('click', () => { state.showList = !state.showList; render(); });
