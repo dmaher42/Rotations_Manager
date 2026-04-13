@@ -31,19 +31,25 @@
     .card-header { padding:16px 16px 0; }
     .card-title { margin:0; font-size:18px; font-weight:700; }
     .card-body { padding:16px; }
-    .hero { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:16px; background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%); }
+    .hero { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding:16px; background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%); }
+    .hero-left { min-width:0; flex:1; }
+    .hero-top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
     .eyebrow { font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.12em; }
     .headline { margin-top:6px; font-size:30px; font-weight:800; line-height:1; color:var(--navy); }
-    .actions, .tabs, .mode-tabs, .live-actions { display:grid; gap:8px; }
-    .actions { grid-auto-flow:column; grid-auto-columns:1fr; }
+    .header-tools { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+    .mode-select {
+      border:1px solid var(--border); background:#fff; color:var(--text); border-radius:12px; padding:10px 12px; font-weight:700; cursor:pointer;
+    }
+    .mode-select:focus { outline:2px solid var(--navy-soft); outline-offset:2px; }
+    .actions, .tabs, .live-actions { display:grid; gap:8px; }
+    .actions { grid-auto-flow:column; grid-auto-columns:1fr; min-width:340px; }
     .tabs { grid-template-columns:repeat(4,1fr); }
-    .mode-tabs { grid-template-columns:repeat(3,1fr); }
     .live-actions { grid-template-columns:repeat(2,1fr); }
-    button, input, textarea { font:inherit; }
-    .btn, .tab, .mode-tab, .toggle-btn, .secondary-btn, .select-btn {
+    button, input, textarea, select { font:inherit; }
+    .btn, .tab, .toggle-btn, .secondary-btn, .select-btn {
       border:1px solid var(--border); background:#fff; color:var(--text); border-radius:14px; padding:11px 12px; font-weight:700; cursor:pointer;
     }
-    .btn.primary, .tab.active, .mode-tab.active { background:var(--navy); color:#fff; border-color:var(--navy); }
+    .btn.primary, .tab.active { background:var(--navy); color:#fff; border-color:var(--navy); }
     .secondary-btn { background:var(--slate-soft); }
     .secondary-btn.warn { background:var(--blue-soft); color:var(--blue); border-color:#bfdbfe; }
     .toggle-btn { width:100%; background:var(--slate-soft); }
@@ -96,12 +102,16 @@
     .override-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
     .helper-text { margin-top:10px; font-size:12px; color:var(--muted); }
     @media (max-width:900px) {
+      .hero { flex-direction:column; }
+      .actions { min-width:0; width:100%; }
       .live-grid, .team-grid, .status-grid, .override-grid { grid-template-columns:1fr; }
     }
     @media (max-width:720px) {
       .app { padding:12px; gap:12px; }
-      .tabs, .mode-tabs, .actions, .live-actions { grid-template-columns:repeat(2,1fr); grid-auto-flow:unset; }
-      .hero { flex-direction:column; align-items:flex-start; padding:14px; }
+      .tabs, .actions, .live-actions { grid-template-columns:repeat(2,1fr); grid-auto-flow:unset; }
+      .hero { padding:14px; }
+      .hero-left, .hero-top { width:100%; }
+      .hero-top { flex-direction:column; align-items:flex-start; }
       .headline { font-size:24px; }
       .card-header { padding:14px 14px 0; }
       .card-body { padding:14px; }
@@ -117,9 +127,20 @@
   <div class="app" id="appRoot">
     <section class="card">
       <div class="hero">
-        <div>
-          <div id="heroEyebrow" class="eyebrow">Rotations</div>
-          <div id="heroHeadline" class="headline">Game Start</div>
+        <div class="hero-left">
+          <div class="hero-top">
+            <div>
+              <div id="heroEyebrow" class="eyebrow">Rotations</div>
+              <div id="heroHeadline" class="headline">Game Start</div>
+            </div>
+            <div class="header-tools">
+              <select id="modeSelect" class="mode-select" aria-label="Screen mode">
+                <option value="live">Live</option>
+                <option value="team">Team</option>
+                <option value="import">Import</option>
+              </select>
+            </div>
+          </div>
         </div>
         <div class="actions">
           <button id="prevBtn" class="btn">Back</button>
@@ -129,7 +150,6 @@
       </div>
     </section>
 
-    <div class="mode-tabs" id="modeTabs"></div>
     <div class="tabs" id="quarterTabs"></div>
 
     <section id="liveView" class="hidden">
@@ -230,11 +250,9 @@
 
   <script>
     const STORAGE_KEY = 'rotationsManagerState';
-
     const PLAYER_ROLES = {
       'Patty B': 'back', 'Archer (J)': 'mid', 'Henry M': 'back', 'Henry S': 'back', Charlie: 'back', Lucas: 'back', Denzel: 'back', Sol: 'back', 'Blake H': 'mid', Toby: 'mid', Levi: 'back', Mayer: 'mid', Mitch: 'mid', 'Ben M': 'mid', Ted: 'mid', 'Archer (M)': 'mid', Brodie: 'forward', 'Archer (F)': 'forward', Chase: 'forward', 'Blake F': 'forward', 'Oskar F': 'forward', 'Lachlan (C)': 'forward', 'Lachie G': 'forward', Mason: 'forward', 'Ben P': 'forward'
     };
-
     const DEFAULT_TEXT = `Rotation plan for this week
 
 Starting 18
@@ -288,7 +306,6 @@ Off: Archer (J), Oskar F, Lachlan (C)
 On: Blake H, Chase, Archer (M)
 
 Ruck: Ben M, Ted, Archer (M)`;
-
     const defaultState = {
       rawText: DEFAULT_TEXT,
       teamName: 'Rotations',
@@ -301,14 +318,13 @@ Ruck: Ben M, Ted, Archer (M)`;
       overrideOffPlayer: null,
       overrideOnPlayer: null
     };
-
     const state = { ...defaultState };
-
     const els = {
       teamName: document.getElementById('teamName'),
       rotationInput: document.getElementById('rotationInput'),
       heroEyebrow: document.getElementById('heroEyebrow'),
       heroHeadline: document.getElementById('heroHeadline'),
+      modeSelect: document.getElementById('modeSelect'),
       prevBtn: document.getElementById('prevBtn'),
       nextBtn: document.getElementById('nextBtn'),
       resetBtn: document.getElementById('resetBtn'),
@@ -319,7 +335,6 @@ Ruck: Ben M, Ted, Archer (M)`;
       overrideOnGrid: document.getElementById('overrideOnGrid'),
       applyOverrideBtn: document.getElementById('applyOverrideBtn'),
       cancelOverrideBtn: document.getElementById('cancelOverrideBtn'),
-      modeTabs: document.getElementById('modeTabs'),
       quarterTabs: document.getElementById('quarterTabs'),
       liveView: document.getElementById('liveView'),
       teamView: document.getElementById('teamView'),
@@ -342,459 +357,39 @@ Ruck: Ben M, Ted, Archer (M)`;
       toggleListBtn: document.getElementById('toggleListBtn'),
       rotationListCard: document.getElementById('rotationListCard')
     };
-
-    function saveState() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          rawText: state.rawText,
-          teamName: state.teamName,
-          activeIndex: state.activeIndex,
-          activeQuarter: state.activeQuarter,
-          activeMode: state.activeMode,
-          showList: state.showList,
-          actionMap: state.actionMap,
-          showOverride: state.showOverride,
-          overrideOffPlayer: state.overrideOffPlayer,
-          overrideOnPlayer: state.overrideOnPlayer
-        }));
-      } catch (error) {
-        console.warn('Unable to save state', error);
-      }
-    }
-
-    function loadState() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return;
-        const parsed = JSON.parse(raw);
-        if (!parsed || typeof parsed !== 'object') return;
-        state.rawText = typeof parsed.rawText === 'string' && parsed.rawText.trim() ? parsed.rawText : defaultState.rawText;
-        state.teamName = typeof parsed.teamName === 'string' && parsed.teamName.trim() ? parsed.teamName : defaultState.teamName;
-        state.activeIndex = Number.isInteger(parsed.activeIndex) ? parsed.activeIndex : defaultState.activeIndex;
-        state.activeQuarter = typeof parsed.activeQuarter === 'string' ? parsed.activeQuarter : defaultState.activeQuarter;
-        state.activeMode = typeof parsed.activeMode === 'string' ? parsed.activeMode : defaultState.activeMode;
-        state.showList = typeof parsed.showList === 'boolean' ? parsed.showList : defaultState.showList;
-        state.actionMap = parsed.actionMap && typeof parsed.actionMap === 'object' ? parsed.actionMap : {};
-        state.showOverride = typeof parsed.showOverride === 'boolean' ? parsed.showOverride : false;
-        state.overrideOffPlayer = typeof parsed.overrideOffPlayer === 'string' ? parsed.overrideOffPlayer : null;
-        state.overrideOnPlayer = typeof parsed.overrideOnPlayer === 'string' ? parsed.overrideOnPlayer : null;
-      } catch (error) {
-        console.warn('Unable to load saved state', error);
-      }
-    }
-
+    function saveState() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ rawText: state.rawText, teamName: state.teamName, activeIndex: state.activeIndex, activeQuarter: state.activeQuarter, activeMode: state.activeMode, showList: state.showList, actionMap: state.actionMap, showOverride: state.showOverride, overrideOffPlayer: state.overrideOffPlayer, overrideOnPlayer: state.overrideOnPlayer })); } catch (error) { console.warn('Unable to save state', error); } }
+    function loadState() { try { const raw = localStorage.getItem(STORAGE_KEY); if (!raw) return; const parsed = JSON.parse(raw); if (!parsed || typeof parsed !== 'object') return; state.rawText = typeof parsed.rawText === 'string' && parsed.rawText.trim() ? parsed.rawText : defaultState.rawText; state.teamName = typeof parsed.teamName === 'string' && parsed.teamName.trim() ? parsed.teamName : defaultState.teamName; state.activeIndex = Number.isInteger(parsed.activeIndex) ? parsed.activeIndex : defaultState.activeIndex; state.activeQuarter = typeof parsed.activeQuarter === 'string' ? parsed.activeQuarter : defaultState.activeQuarter; state.activeMode = typeof parsed.activeMode === 'string' ? parsed.activeMode : defaultState.activeMode; state.showList = typeof parsed.showList === 'boolean' ? parsed.showList : defaultState.showList; state.actionMap = parsed.actionMap && typeof parsed.actionMap === 'object' ? parsed.actionMap : {}; state.showOverride = typeof parsed.showOverride === 'boolean' ? parsed.showOverride : false; state.overrideOffPlayer = typeof parsed.overrideOffPlayer === 'string' ? parsed.overrideOffPlayer : null; state.overrideOnPlayer = typeof parsed.overrideOnPlayer === 'string' ? parsed.overrideOnPlayer : null; } catch (error) { console.warn('Unable to load saved state', error); } }
     function splitNames(text) { return text.split(',').map((n) => n.trim()).filter(Boolean); }
     function cleanLine(line) { return line.replace(/\u00a0/g, ' ').trim(); }
-
-    function parseRotationText(input) {
-      const lines = input.split(/\r?\n/).map(cleanLine).filter(Boolean);
-      const data = { starting18: { backs: [], mids: [], forwards: [] }, bench: [], ruck: [], quarters: { Q1: { startOn: [], steps: [] }, Q2: { startOn: [], steps: [] }, Q3: { startOn: [], steps: [] }, Q4: { startOn: [], steps: [] } } };
-      let currentQuarter = null;
-      let pendingStep = null;
-      for (const line of lines) {
-        if (/^Backs:/i.test(line)) { data.starting18.backs = splitNames(line.replace(/^Backs:/i, '')); continue; }
-        if (/^Mids:/i.test(line)) { data.starting18.mids = splitNames(line.replace(/^Mids:/i, '')); continue; }
-        if (/^Forwards:/i.test(line)) { data.starting18.forwards = splitNames(line.replace(/^Forwards:/i, '')); continue; }
-        if (/^Bench:/i.test(line)) { data.bench = splitNames(line.replace(/^Bench:/i, '')); continue; }
-        if (/^Ruck:/i.test(line)) { data.ruck = splitNames(line.replace(/^Ruck:/i, '')); continue; }
-        if (/^Q[1-4]$/i.test(line)) { currentQuarter = line.toUpperCase(); pendingStep = null; continue; }
-        if (!currentQuarter) continue;
-        if (/^Start on:/i.test(line)) { data.quarters[currentQuarter].startOn = splitNames(line.replace(/^Start on:/i, '')); continue; }
-        if (/^\d+\s*min$/i.test(line)) { pendingStep = { label: line, off: [], on: [] }; data.quarters[currentQuarter].steps.push(pendingStep); continue; }
-        if (/^Off:/i.test(line) && pendingStep) { pendingStep.off = splitNames(line.replace(/^Off:/i, '')); continue; }
-        if (/^On:/i.test(line) && pendingStep) { pendingStep.on = splitNames(line.replace(/^On:/i, '')); continue; }
-      }
-      return data;
-    }
-
-    function buildTimeline(parsed) {
-      const initialOn = [...parsed.starting18.backs, ...parsed.starting18.mids, ...parsed.starting18.forwards];
-      const initialBench = [...parsed.bench];
-      const timeline = [{ id:'START', quarter:'START', label:'Start', on:[], off:[], currentOn:[...initialOn], currentBench:[...initialBench] }];
-      let currentOn = [...initialOn];
-      let currentBench = [...initialBench];
-      ['Q1','Q2','Q3','Q4'].forEach((quarter) => {
-        const quarterData = parsed.quarters[quarter];
-        if (quarterData.startOn.length > 0) {
-          const stepOn = quarterData.startOn.filter(Boolean);
-          const stepOff = [];
-          stepOn.forEach((playerOn) => {
-            if (!currentBench.includes(playerOn)) return;
-            const playerOff = currentOn.find((player) => !stepOn.includes(player));
-            if (!playerOff) return;
-            currentOn = currentOn.filter((name) => name !== playerOff);
-            currentBench = currentBench.filter((name) => name !== playerOn);
-            currentOn.push(playerOn);
-            currentBench.push(playerOff);
-            stepOff.push(playerOff);
-          });
-          timeline.push({ id: quarter + '-START', quarter, label: 'Start', on: stepOn, off: stepOff, currentOn:[...currentOn], currentBench:[...currentBench] });
-        } else {
-          timeline.push({ id: quarter + '-START', quarter, label: 'Start', on: [], off: [], currentOn:[...currentOn], currentBench:[...currentBench] });
-        }
-        quarterData.steps.forEach((step, index) => {
-          const stepOff = step.off.filter(Boolean);
-          const stepOn = step.on.filter(Boolean);
-          stepOff.forEach((player) => {
-            currentOn = currentOn.filter((name) => name !== player);
-            if (!currentBench.includes(player)) currentBench.push(player);
-          });
-          stepOn.forEach((player) => {
-            currentBench = currentBench.filter((name) => name !== player);
-            if (!currentOn.includes(player)) currentOn.push(player);
-          });
-          timeline.push({ id: quarter + '-' + index + '-' + step.label, quarter, label: step.label, on: stepOn, off: stepOff, currentOn:[...currentOn], currentBench:[...currentBench] });
-        });
-      });
-      return timeline;
-    }
-
-    function groupPlayersByRole(players) {
-      return {
-        backs: players.filter((n) => PLAYER_ROLES[n] === 'back'),
-        mids: players.filter((n) => PLAYER_ROLES[n] === 'mid'),
-        forwards: players.filter((n) => PLAYER_ROLES[n] === 'forward'),
-        others: players.filter((n) => !(n in PLAYER_ROLES))
-      };
-    }
-
+    function parseRotationText(input) { const lines = input.split(/\r?\n/).map(cleanLine).filter(Boolean); const data = { starting18: { backs: [], mids: [], forwards: [] }, bench: [], ruck: [], quarters: { Q1: { startOn: [], steps: [] }, Q2: { startOn: [], steps: [] }, Q3: { startOn: [], steps: [] }, Q4: { startOn: [], steps: [] } } }; let currentQuarter = null; let pendingStep = null; for (const line of lines) { if (/^Backs:/i.test(line)) { data.starting18.backs = splitNames(line.replace(/^Backs:/i, '')); continue; } if (/^Mids:/i.test(line)) { data.starting18.mids = splitNames(line.replace(/^Mids:/i, '')); continue; } if (/^Forwards:/i.test(line)) { data.starting18.forwards = splitNames(line.replace(/^Forwards:/i, '')); continue; } if (/^Bench:/i.test(line)) { data.bench = splitNames(line.replace(/^Bench:/i, '')); continue; } if (/^Ruck:/i.test(line)) { data.ruck = splitNames(line.replace(/^Ruck:/i, '')); continue; } if (/^Q[1-4]$/i.test(line)) { currentQuarter = line.toUpperCase(); pendingStep = null; continue; } if (!currentQuarter) continue; if (/^Start on:/i.test(line)) { data.quarters[currentQuarter].startOn = splitNames(line.replace(/^Start on:/i, '')); continue; } if (/^\d+\s*min$/i.test(line)) { pendingStep = { label: line, off: [], on: [] }; data.quarters[currentQuarter].steps.push(pendingStep); continue; } if (/^Off:/i.test(line) && pendingStep) { pendingStep.off = splitNames(line.replace(/^Off:/i, '')); continue; } if (/^On:/i.test(line) && pendingStep) { pendingStep.on = splitNames(line.replace(/^On:/i, '')); continue; } } return data; }
+    function buildTimeline(parsed) { const initialOn = [...parsed.starting18.backs, ...parsed.starting18.mids, ...parsed.starting18.forwards]; const initialBench = [...parsed.bench]; const timeline = [{ id:'START', quarter:'START', label:'Start', on:[], off:[], currentOn:[...initialOn], currentBench:[...initialBench] }]; let currentOn = [...initialOn]; let currentBench = [...initialBench]; ['Q1','Q2','Q3','Q4'].forEach((quarter) => { const quarterData = parsed.quarters[quarter]; if (quarterData.startOn.length > 0) { const stepOn = quarterData.startOn.filter(Boolean); const stepOff = []; stepOn.forEach((playerOn) => { if (!currentBench.includes(playerOn)) return; const playerOff = currentOn.find((player) => !stepOn.includes(player)); if (!playerOff) return; currentOn = currentOn.filter((name) => name !== playerOff); currentBench = currentBench.filter((name) => name !== playerOn); currentOn.push(playerOn); currentBench.push(playerOff); stepOff.push(playerOff); }); timeline.push({ id: quarter + '-START', quarter, label: 'Start', on: stepOn, off: stepOff, currentOn:[...currentOn], currentBench:[...currentBench] }); } else { timeline.push({ id: quarter + '-START', quarter, label: 'Start', on: [], off: [], currentOn:[...currentOn], currentBench:[...currentBench] }); } quarterData.steps.forEach((step, index) => { const stepOff = step.off.filter(Boolean); const stepOn = step.on.filter(Boolean); stepOff.forEach((player) => { currentOn = currentOn.filter((name) => name !== player); if (!currentBench.includes(player)) currentBench.push(player); }); stepOn.forEach((player) => { currentBench = currentBench.filter((name) => name !== player); if (!currentOn.includes(player)) currentOn.push(player); }); timeline.push({ id: quarter + '-' + index + '-' + step.label, quarter, label: step.label, on: stepOn, off: stepOff, currentOn:[...currentOn], currentBench:[...currentBench] }); }); }); return timeline; }
+    function groupPlayersByRole(players) { return { backs: players.filter((n) => PLAYER_ROLES[n] === 'back'), mids: players.filter((n) => PLAYER_ROLES[n] === 'mid'), forwards: players.filter((n) => PLAYER_ROLES[n] === 'forward'), others: players.filter((n) => !(n in PLAYER_ROLES)) }; }
     function quarterFromStep(step) { return step.quarter === 'START' ? 'Q1' : step.quarter; }
-
-    function buildLiveState(baseTimeline, currentIndex, actionMap) {
-      let currentOn = [...baseTimeline[0].currentOn];
-      let currentBench = [...baseTimeline[0].currentBench];
-      const benchMeta = {};
-      [...currentOn, ...currentBench].forEach((player) => {
-        benchMeta[player] = { lastBenchStep: currentBench.includes(player) ? 0 : null };
-      });
-      for (let i = 1; i <= currentIndex; i += 1) {
-        const planned = baseTimeline[i];
-        const action = actionMap[i] || { type: 'complete' };
-        const offPlayers = action.type === 'override' ? action.off : action.type === 'complete' ? planned.off : [];
-        const onPlayers = action.type === 'override' ? action.on : action.type === 'complete' ? planned.on : [];
-        offPlayers.forEach((player) => {
-          currentOn = currentOn.filter((name) => name !== player);
-          if (!currentBench.includes(player)) currentBench.push(player);
-          if (!benchMeta[player]) benchMeta[player] = {};
-          benchMeta[player].lastBenchStep = i;
-        });
-        onPlayers.forEach((player) => {
-          currentBench = currentBench.filter((name) => name !== player);
-          if (!currentOn.includes(player)) currentOn.push(player);
-        });
-      }
-      return { currentOn, currentBench, benchMeta };
-    }
-
+    function buildLiveState(baseTimeline, currentIndex, actionMap) { let currentOn = [...baseTimeline[0].currentOn]; let currentBench = [...baseTimeline[0].currentBench]; const benchMeta = {}; [...currentOn, ...currentBench].forEach((player) => { benchMeta[player] = { lastBenchStep: currentBench.includes(player) ? 0 : null }; }); for (let i = 1; i <= currentIndex; i += 1) { const planned = baseTimeline[i]; const action = actionMap[i] || { type: 'complete' }; const offPlayers = action.type === 'override' ? action.off : action.type === 'complete' ? planned.off : []; const onPlayers = action.type === 'override' ? action.on : action.type === 'complete' ? planned.on : []; offPlayers.forEach((player) => { currentOn = currentOn.filter((name) => name !== player); if (!currentBench.includes(player)) currentBench.push(player); if (!benchMeta[player]) benchMeta[player] = {}; benchMeta[player].lastBenchStep = i; }); onPlayers.forEach((player) => { currentBench = currentBench.filter((name) => name !== player); if (!currentOn.includes(player)) currentOn.push(player); }); } return { currentOn, currentBench, benchMeta }; }
     function getActionForIndex(index) { return state.actionMap[index] || { type: 'complete' }; }
-
-    function getDisplayedCurrentStep(baseTimeline, currentIndex) {
-      if (currentIndex === 0) return { quarter: 'START', label: 'Start', off: [], on: [] };
-      const planned = baseTimeline[currentIndex];
-      const action = getActionForIndex(currentIndex);
-      if (action.type === 'skip') return { quarter: planned.quarter, label: planned.label + ' skipped', off: [], on: [] };
-      if (action.type === 'override') return { quarter: planned.quarter, label: planned.label + ' override', off: action.off, on: action.on };
-      return { quarter: planned.quarter, label: planned.label, off: planned.off, on: planned.on };
-    }
-
-    function getBenchStatus(player, benchMeta, currentIndex) {
-      const meta = benchMeta[player] || {};
-      if (meta.lastBenchStep === currentIndex && currentIndex > 0) return 'just off';
-      if (meta.lastBenchStep == null) return 'ready';
-      if (currentIndex - meta.lastBenchStep >= 2) return 'waiting';
-      return 'ready';
-    }
-
-    function renderPills(container, players, kind, metaLookup) {
-      container.innerHTML = '';
-      if (!players || players.length === 0) {
-        container.innerHTML = '<div class="empty">—</div>';
-        return;
-      }
-      players.forEach((player) => {
-        const div = document.createElement('div');
-        div.className = 'pill ' + (kind || 'team');
-        div.innerHTML = metaLookup ? '<span>' + player + '</span><small>' + metaLookup(player) + '</small>' : '<span>' + player + '</span>';
-        container.appendChild(div);
-      });
-    }
-
-    function renderTags(container, off, on, skipped) {
-      container.innerHTML = '';
-      if (skipped) {
-        container.innerHTML = '<span class="tag skip">Skipped</span>';
-        return;
-      }
-      if ((!off || !off.length) && (!on || !on.length)) {
-        container.innerHTML = '<span class="tag next">—</span>';
-        return;
-      }
-      off.forEach((p) => {
-        const s = document.createElement('span');
-        s.className = 'tag off';
-        s.textContent = 'Off: ' + p;
-        container.appendChild(s);
-      });
-      on.forEach((p) => {
-        const s = document.createElement('span');
-        s.className = 'tag on';
-        s.textContent = 'On: ' + p;
-        container.appendChild(s);
-      });
-    }
-
-    function buildStepCard(step, timelineIndex, isActive) {
-      const btn = document.createElement('button');
-      btn.className = 'flow-step' + (isActive ? ' active' : '');
-      btn.addEventListener('click', () => { jumpToIndex(timelineIndex); });
-      const action = getActionForIndex(timelineIndex);
-      const off = action.type === 'override' ? action.off : action.type === 'complete' ? step.off : [];
-      const on = action.type === 'override' ? action.on : action.type === 'complete' ? step.on : [];
-      const statusTag = action.type === 'skip' ? '<span class="tag skip">Skipped</span>' : '';
-      btn.innerHTML = '<div class="flow-top-row"><div><div class="flow-quarter">' + (step.quarter === 'START' ? 'Game' : step.quarter) + '</div><div class="flow-label">' + step.label + '</div></div><div style="font-size:18px;font-weight:800;">' + (isActive ? '●' : '') + '</div></div><div class="tag-wrap">' + statusTag + (off.length ? off.map((p) => '<span class="tag off">Off: ' + p + '</span>').join('') : '') + (on.length ? on.map((p) => '<span class="tag on">On: ' + p + '</span>').join('') : '') + '</div>';
-      return btn;
-    }
-
-    function renderModeTabs() {
-      const modes = [{ key:'live', label:'Live' }, { key:'team', label:'Team' }, { key:'import', label:'Import' }];
-      els.modeTabs.innerHTML = '';
-      modes.forEach((mode) => {
-        const btn = document.createElement('button');
-        btn.className = 'mode-tab' + (state.activeMode === mode.key ? ' active' : '');
-        btn.textContent = mode.label;
-        btn.addEventListener('click', () => {
-          state.activeMode = mode.key;
-          render();
-        });
-        els.modeTabs.appendChild(btn);
-      });
-    }
-
-    function renderQuarterTabs(baseTimeline) {
-      const quarters = ['Q1','Q2','Q3','Q4'];
-      els.quarterTabs.innerHTML = '';
-      quarters.forEach((quarter) => {
-        const btn = document.createElement('button');
-        btn.className = 'tab' + (state.activeQuarter === quarter ? ' active' : '');
-        btn.textContent = quarter;
-        btn.addEventListener('click', () => {
-          state.activeQuarter = quarter;
-          const firstIndex = baseTimeline.findIndex((step, index) => index > 0 && step.quarter === quarter);
-          jumpToIndex(firstIndex > 0 ? firstIndex - 1 : 0, false);
-        });
-        els.quarterTabs.appendChild(btn);
-      });
-    }
-
-    function jumpToIndex(targetIndex, autoQuarter = true) {
-      const parsed = parseRotationText(state.rawText);
-      const baseTimeline = buildTimeline(parsed);
-      targetIndex = Math.max(0, Math.min(targetIndex, baseTimeline.length - 1));
-      if (targetIndex > state.activeIndex) {
-        for (let i = state.activeIndex + 1; i <= targetIndex; i += 1) {
-          if (!state.actionMap[i]) state.actionMap[i] = { type: 'complete' };
-        }
-      }
-      state.activeIndex = targetIndex;
-      if (autoQuarter) state.activeQuarter = quarterFromStep(baseTimeline[targetIndex]);
-      state.showOverride = false;
-      state.overrideOffPlayer = null;
-      state.overrideOnPlayer = null;
-      render();
-    }
-
-    function renderOverrideOptions(currentOn, currentBench) {
-      els.overrideOffGrid.innerHTML = '';
-      els.overrideOnGrid.innerHTML = '';
-      currentOn.forEach((player) => {
-        const btn = document.createElement('button');
-        btn.className = 'select-btn' + (state.overrideOffPlayer === player ? ' active' : '');
-        btn.textContent = player;
-        btn.addEventListener('click', () => {
-          state.overrideOffPlayer = player;
-          render();
-        });
-        els.overrideOffGrid.appendChild(btn);
-      });
-      currentBench.forEach((player) => {
-        const btn = document.createElement('button');
-        btn.className = 'select-btn' + (state.overrideOnPlayer === player ? ' active' : '');
-        btn.textContent = player;
-        btn.addEventListener('click', () => {
-          state.overrideOnPlayer = player;
-          render();
-        });
-        els.overrideOnGrid.appendChild(btn);
-      });
-    }
-
-    function applyNextAction(type) {
-      const parsed = parseRotationText(state.rawText);
-      const baseTimeline = buildTimeline(parsed);
-      const nextIndex = state.activeIndex + 1;
-      if (nextIndex >= baseTimeline.length) return;
-      state.actionMap[nextIndex] = { type: type === 'skip' ? 'skip' : 'complete' };
-      state.activeIndex = nextIndex;
-      state.activeQuarter = quarterFromStep(baseTimeline[nextIndex]);
-      state.showOverride = false;
-      state.overrideOffPlayer = null;
-      state.overrideOnPlayer = null;
-      render();
-    }
-
-    function applyOverride() {
-      const parsed = parseRotationText(state.rawText);
-      const baseTimeline = buildTimeline(parsed);
-      const nextIndex = state.activeIndex + 1;
-      if (nextIndex >= baseTimeline.length) return;
-      if (!state.overrideOffPlayer || !state.overrideOnPlayer) return;
-      state.actionMap[nextIndex] = { type: 'override', off: [state.overrideOffPlayer], on: [state.overrideOnPlayer] };
-      state.activeIndex = nextIndex;
-      state.activeQuarter = quarterFromStep(baseTimeline[nextIndex]);
-      state.showOverride = false;
-      state.overrideOffPlayer = null;
-      state.overrideOnPlayer = null;
-      render();
-    }
-
-    function render() {
-      const parsed = parseRotationText(state.rawText);
-      const baseTimeline = buildTimeline(parsed);
-      state.activeIndex = Math.max(0, Math.min(state.activeIndex, baseTimeline.length - 1));
-      const liveState = buildLiveState(baseTimeline, state.activeIndex, state.actionMap);
-      const currentDisplay = getDisplayedCurrentStep(baseTimeline, state.activeIndex);
-      const nextStep = baseTimeline[state.activeIndex + 1] || null;
-      const nextAction = nextStep ? getActionForIndex(state.activeIndex + 1) : null;
-      const grouped = groupPlayersByRole(liveState.currentOn);
-      const visibleSteps = baseTimeline.filter((step) => step.quarter === state.activeQuarter || (state.activeQuarter === 'Q1' && step.quarter === 'START'));
-
-      els.heroEyebrow.textContent = state.teamName || 'Rotations';
-      els.heroHeadline.textContent = currentDisplay.quarter === 'START' ? 'Game Start' : currentDisplay.quarter + ' · ' + currentDisplay.label;
-      renderModeTabs();
-      renderQuarterTabs(baseTimeline);
-
-      els.liveView.classList.toggle('hidden', state.activeMode !== 'live');
-      els.teamView.classList.toggle('hidden', state.activeMode !== 'team');
-      els.importView.classList.toggle('hidden', state.activeMode !== 'import');
-
-      els.nowQuarter.textContent = currentDisplay.quarter === 'START' ? 'GAME' : currentDisplay.quarter;
-      els.nowLabel.textContent = currentDisplay.label;
-      renderPills(els.offGrid, currentDisplay.off, 'off');
-      renderPills(els.onGrid, currentDisplay.on, 'on');
-      renderPills(els.benchGrid, liveState.currentBench, 'bench', (player) => getBenchStatus(player, liveState.benchMeta, state.activeIndex));
-
-      if (nextStep) {
-        els.nextQuarter.textContent = nextStep.quarter === 'START' ? 'GAME' : nextStep.quarter;
-        els.nextLabel.textContent = nextStep.label;
-        if (nextAction && nextAction.type === 'override') {
-          renderTags(els.nextTags, nextAction.off, nextAction.on, false);
-        } else {
-          renderTags(els.nextTags, nextStep.off, nextStep.on, nextAction && nextAction.type === 'skip');
-        }
-      } else {
-        els.nextQuarter.textContent = 'END';
-        els.nextLabel.textContent = 'No next step';
-        els.nextTags.innerHTML = '<span class="tag next">—</span>';
-      }
-
-      els.rotationListCard.classList.toggle('hidden', !state.showList);
-      els.toggleListBtn.textContent = state.showList ? 'Hide rotation list' : 'Show rotation list';
-      els.toggleListBtn.classList.toggle('active', state.showList);
-
-      els.flowList.innerHTML = '';
-      visibleSteps.forEach((step) => {
-        const index = baseTimeline.findIndex((entry) => entry.id === step.id);
-        els.flowList.appendChild(buildStepCard(step, index, index === state.activeIndex));
-      });
-
-      renderPills(els.backsGrid, grouped.backs, 'team');
-      renderPills(els.midsGrid, grouped.mids, 'team');
-      renderPills(els.forwardsGrid, grouped.forwards, 'team');
-      renderPills(els.ruckGrid, parsed.ruck, 'team');
-      if (grouped.others.length) {
-        els.othersCard.classList.remove('hidden');
-        renderPills(els.othersGrid, grouped.others, 'team');
-      } else {
-        els.othersCard.classList.add('hidden');
-      }
-
-      els.prevBtn.disabled = state.activeIndex <= 0;
-      els.nextBtn.disabled = state.activeIndex >= baseTimeline.length - 1;
-      els.skipBtn.disabled = state.activeIndex >= baseTimeline.length - 1;
-      els.overrideBtn.disabled = state.activeIndex >= baseTimeline.length - 1;
-      els.overrideCard.classList.toggle('hidden', !state.showOverride);
-      if (state.showOverride) renderOverrideOptions(liveState.currentOn, liveState.currentBench);
-      els.applyOverrideBtn.disabled = !(state.overrideOffPlayer && state.overrideOnPlayer);
-      saveState();
-    }
-
-    loadState();
-    els.teamName.value = state.teamName;
-    els.rotationInput.value = state.rawText;
-
-    els.teamName.addEventListener('input', (e) => {
-      state.teamName = e.target.value;
-      render();
-    });
-
-    els.rotationInput.addEventListener('input', (e) => {
-      state.rawText = e.target.value;
-      state.activeIndex = 0;
-      state.activeQuarter = 'Q1';
-      state.actionMap = {};
-      state.showOverride = false;
-      state.overrideOffPlayer = null;
-      state.overrideOnPlayer = null;
-      render();
-    });
-
-    els.prevBtn.addEventListener('click', () => {
-      if (state.activeIndex > 0) jumpToIndex(state.activeIndex - 1);
-    });
-
-    els.nextBtn.addEventListener('click', () => {
-      applyNextAction('complete');
-    });
-
-    els.skipBtn.addEventListener('click', () => {
-      applyNextAction('skip');
-    });
-
-    els.overrideBtn.addEventListener('click', () => {
-      state.showOverride = !state.showOverride;
-      state.overrideOffPlayer = null;
-      state.overrideOnPlayer = null;
-      render();
-    });
-
-    els.applyOverrideBtn.addEventListener('click', () => {
-      applyOverride();
-    });
-
-    els.cancelOverrideBtn.addEventListener('click', () => {
-      state.showOverride = false;
-      state.overrideOffPlayer = null;
-      state.overrideOnPlayer = null;
-      render();
-    });
-
-    els.resetBtn.addEventListener('click', () => {
-      Object.assign(state, { ...defaultState });
-      try {
-        localStorage.removeItem(STORAGE_KEY);
-      } catch (error) {
-        console.warn('Unable to clear saved state', error);
-      }
-      els.teamName.value = state.teamName;
-      els.rotationInput.value = state.rawText;
-      render();
-    });
-
-    els.toggleListBtn.addEventListener('click', () => {
-      state.showList = !state.showList;
-      render();
-    });
-
+    function getDisplayedCurrentStep(baseTimeline, currentIndex) { if (currentIndex === 0) return { quarter: 'START', label: 'Start', off: [], on: [] }; const planned = baseTimeline[currentIndex]; const action = getActionForIndex(currentIndex); if (action.type === 'skip') return { quarter: planned.quarter, label: planned.label + ' skipped', off: [], on: [] }; if (action.type === 'override') return { quarter: planned.quarter, label: planned.label + ' override', off: action.off, on: action.on }; return { quarter: planned.quarter, label: planned.label, off: planned.off, on: planned.on }; }
+    function getBenchStatus(player, benchMeta, currentIndex) { const meta = benchMeta[player] || {}; if (meta.lastBenchStep === currentIndex && currentIndex > 0) return 'just off'; if (meta.lastBenchStep == null) return 'ready'; if (currentIndex - meta.lastBenchStep >= 2) return 'waiting'; return 'ready'; }
+    function renderPills(container, players, kind, metaLookup) { container.innerHTML = ''; if (!players || players.length === 0) { container.innerHTML = '<div class="empty">—</div>'; return; } players.forEach((player) => { const div = document.createElement('div'); div.className = 'pill ' + (kind || 'team'); div.innerHTML = metaLookup ? '<span>' + player + '</span><small>' + metaLookup(player) + '</small>' : '<span>' + player + '</span>'; container.appendChild(div); }); }
+    function renderTags(container, off, on, skipped) { container.innerHTML = ''; if (skipped) { container.innerHTML = '<span class="tag skip">Skipped</span>'; return; } if ((!off || !off.length) && (!on || !on.length)) { container.innerHTML = '<span class="tag next">—</span>'; return; } off.forEach((p) => { const s = document.createElement('span'); s.className = 'tag off'; s.textContent = 'Off: ' + p; container.appendChild(s); }); on.forEach((p) => { const s = document.createElement('span'); s.className = 'tag on'; s.textContent = 'On: ' + p; container.appendChild(s); }); }
+    function buildStepCard(step, timelineIndex, isActive) { const btn = document.createElement('button'); btn.className = 'flow-step' + (isActive ? ' active' : ''); btn.addEventListener('click', () => { jumpToIndex(timelineIndex); }); const action = getActionForIndex(timelineIndex); const off = action.type === 'override' ? action.off : action.type === 'complete' ? step.off : []; const on = action.type === 'override' ? action.on : action.type === 'complete' ? step.on : []; const statusTag = action.type === 'skip' ? '<span class="tag skip">Skipped</span>' : ''; btn.innerHTML = '<div class="flow-top-row"><div><div class="flow-quarter">' + (step.quarter === 'START' ? 'Game' : step.quarter) + '</div><div class="flow-label">' + step.label + '</div></div><div style="font-size:18px;font-weight:800;">' + (isActive ? '●' : '') + '</div></div><div class="tag-wrap">' + statusTag + (off.length ? off.map((p) => '<span class="tag off">Off: ' + p + '</span>').join('') : '') + (on.length ? on.map((p) => '<span class="tag on">On: ' + p + '</span>').join('') : '') + '</div>'; return btn; }
+    function renderQuarterTabs(baseTimeline) { const quarters = ['Q1','Q2','Q3','Q4']; els.quarterTabs.innerHTML = ''; quarters.forEach((quarter) => { const btn = document.createElement('button'); btn.className = 'tab' + (state.activeQuarter === quarter ? ' active' : ''); btn.textContent = quarter; btn.addEventListener('click', () => { state.activeQuarter = quarter; const firstIndex = baseTimeline.findIndex((step, index) => index > 0 && step.quarter === quarter); jumpToIndex(firstIndex > 0 ? firstIndex - 1 : 0, false); }); els.quarterTabs.appendChild(btn); }); }
+    function jumpToIndex(targetIndex, autoQuarter = true) { const parsed = parseRotationText(state.rawText); const baseTimeline = buildTimeline(parsed); targetIndex = Math.max(0, Math.min(targetIndex, baseTimeline.length - 1)); if (targetIndex > state.activeIndex) { for (let i = state.activeIndex + 1; i <= targetIndex; i += 1) { if (!state.actionMap[i]) state.actionMap[i] = { type: 'complete' }; } } state.activeIndex = targetIndex; if (autoQuarter) state.activeQuarter = quarterFromStep(baseTimeline[targetIndex]); state.showOverride = false; state.overrideOffPlayer = null; state.overrideOnPlayer = null; render(); }
+    function renderOverrideOptions(currentOn, currentBench) { els.overrideOffGrid.innerHTML = ''; els.overrideOnGrid.innerHTML = ''; currentOn.forEach((player) => { const btn = document.createElement('button'); btn.className = 'select-btn' + (state.overrideOffPlayer === player ? ' active' : ''); btn.textContent = player; btn.addEventListener('click', () => { state.overrideOffPlayer = player; render(); }); els.overrideOffGrid.appendChild(btn); }); currentBench.forEach((player) => { const btn = document.createElement('button'); btn.className = 'select-btn' + (state.overrideOnPlayer === player ? ' active' : ''); btn.textContent = player; btn.addEventListener('click', () => { state.overrideOnPlayer = player; render(); }); els.overrideOnGrid.appendChild(btn); }); }
+    function applyNextAction(type) { const parsed = parseRotationText(state.rawText); const baseTimeline = buildTimeline(parsed); const nextIndex = state.activeIndex + 1; if (nextIndex >= baseTimeline.length) return; state.actionMap[nextIndex] = { type: type === 'skip' ? 'skip' : 'complete' }; state.activeIndex = nextIndex; state.activeQuarter = quarterFromStep(baseTimeline[nextIndex]); state.showOverride = false; state.overrideOffPlayer = null; state.overrideOnPlayer = null; render(); }
+    function applyOverride() { const parsed = parseRotationText(state.rawText); const baseTimeline = buildTimeline(parsed); const nextIndex = state.activeIndex + 1; if (nextIndex >= baseTimeline.length) return; if (!state.overrideOffPlayer || !state.overrideOnPlayer) return; state.actionMap[nextIndex] = { type: 'override', off: [state.overrideOffPlayer], on: [state.overrideOnPlayer] }; state.activeIndex = nextIndex; state.activeQuarter = quarterFromStep(baseTimeline[nextIndex]); state.showOverride = false; state.overrideOffPlayer = null; state.overrideOnPlayer = null; render(); }
+    function render() { const parsed = parseRotationText(state.rawText); const baseTimeline = buildTimeline(parsed); state.activeIndex = Math.max(0, Math.min(state.activeIndex, baseTimeline.length - 1)); const liveState = buildLiveState(baseTimeline, state.activeIndex, state.actionMap); const currentDisplay = getDisplayedCurrentStep(baseTimeline, state.activeIndex); const nextStep = baseTimeline[state.activeIndex + 1] || null; const nextAction = nextStep ? getActionForIndex(state.activeIndex + 1) : null; const grouped = groupPlayersByRole(liveState.currentOn); const visibleSteps = baseTimeline.filter((step) => step.quarter === state.activeQuarter || (state.activeQuarter === 'Q1' && step.quarter === 'START')); els.heroEyebrow.textContent = state.teamName || 'Rotations'; els.heroHeadline.textContent = currentDisplay.quarter === 'START' ? 'Game Start' : currentDisplay.quarter + ' · ' + currentDisplay.label; els.modeSelect.value = state.activeMode; renderQuarterTabs(baseTimeline); els.liveView.classList.toggle('hidden', state.activeMode !== 'live'); els.teamView.classList.toggle('hidden', state.activeMode !== 'team'); els.importView.classList.toggle('hidden', state.activeMode !== 'import'); els.nowQuarter.textContent = currentDisplay.quarter === 'START' ? 'GAME' : currentDisplay.quarter; els.nowLabel.textContent = currentDisplay.label; renderPills(els.offGrid, currentDisplay.off, 'off'); renderPills(els.onGrid, currentDisplay.on, 'on'); renderPills(els.benchGrid, liveState.currentBench, 'bench', (player) => getBenchStatus(player, liveState.benchMeta, state.activeIndex)); if (nextStep) { els.nextQuarter.textContent = nextStep.quarter === 'START' ? 'GAME' : nextStep.quarter; els.nextLabel.textContent = nextStep.label; if (nextAction && nextAction.type === 'override') { renderTags(els.nextTags, nextAction.off, nextAction.on, false); } else { renderTags(els.nextTags, nextStep.off, nextStep.on, nextAction && nextAction.type === 'skip'); } } else { els.nextQuarter.textContent = 'END'; els.nextLabel.textContent = 'No next step'; els.nextTags.innerHTML = '<span class="tag next">—</span>'; } els.rotationListCard.classList.toggle('hidden', !state.showList); els.toggleListBtn.textContent = state.showList ? 'Hide rotation list' : 'Show rotation list'; els.toggleListBtn.classList.toggle('active', state.showList); els.flowList.innerHTML = ''; visibleSteps.forEach((step) => { const index = baseTimeline.findIndex((entry) => entry.id === step.id); els.flowList.appendChild(buildStepCard(step, index, index === state.activeIndex)); }); renderPills(els.backsGrid, grouped.backs, 'team'); renderPills(els.midsGrid, grouped.mids, 'team'); renderPills(els.forwardsGrid, grouped.forwards, 'team'); renderPills(els.ruckGrid, parsed.ruck, 'team'); if (grouped.others.length) { els.othersCard.classList.remove('hidden'); renderPills(els.othersGrid, grouped.others, 'team'); } else { els.othersCard.classList.add('hidden'); } els.prevBtn.disabled = state.activeIndex <= 0; els.nextBtn.disabled = state.activeIndex >= baseTimeline.length - 1; els.skipBtn.disabled = state.activeIndex >= baseTimeline.length - 1; els.overrideBtn.disabled = state.activeIndex >= baseTimeline.length - 1; els.overrideCard.classList.toggle('hidden', !state.showOverride); if (state.showOverride) renderOverrideOptions(liveState.currentOn, liveState.currentBench); els.applyOverrideBtn.disabled = !(state.overrideOffPlayer && state.overrideOnPlayer); saveState(); }
+    loadState(); els.teamName.value = state.teamName; els.rotationInput.value = state.rawText;
+    els.modeSelect.addEventListener('change', (e) => { state.activeMode = e.target.value; render(); });
+    els.teamName.addEventListener('input', (e) => { state.teamName = e.target.value; render(); });
+    els.rotationInput.addEventListener('input', (e) => { state.rawText = e.target.value; state.activeIndex = 0; state.activeQuarter = 'Q1'; state.actionMap = {}; state.showOverride = false; state.overrideOffPlayer = null; state.overrideOnPlayer = null; render(); });
+    els.prevBtn.addEventListener('click', () => { if (state.activeIndex > 0) jumpToIndex(state.activeIndex - 1); });
+    els.nextBtn.addEventListener('click', () => { applyNextAction('complete'); });
+    els.skipBtn.addEventListener('click', () => { applyNextAction('skip'); });
+    els.overrideBtn.addEventListener('click', () => { state.showOverride = !state.showOverride; state.overrideOffPlayer = null; state.overrideOnPlayer = null; render(); });
+    els.applyOverrideBtn.addEventListener('click', () => { applyOverride(); });
+    els.cancelOverrideBtn.addEventListener('click', () => { state.showOverride = false; state.overrideOffPlayer = null; state.overrideOnPlayer = null; render(); });
+    els.resetBtn.addEventListener('click', () => { Object.assign(state, { ...defaultState }); try { localStorage.removeItem(STORAGE_KEY); } catch (error) { console.warn('Unable to clear saved state', error); } els.teamName.value = state.teamName; els.rotationInput.value = state.rawText; els.modeSelect.value = state.activeMode; render(); });
+    els.toggleListBtn.addEventListener('click', () => { state.showList = !state.showList; render(); });
     render();
   </script>
 </body>
